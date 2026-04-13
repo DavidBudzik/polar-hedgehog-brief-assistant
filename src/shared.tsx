@@ -87,7 +87,7 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
   const ai = getAI();
   const config: Record<string, unknown> = json ? { responseMimeType: 'application/json' } : {};
   const res = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config,
   });
@@ -103,7 +103,7 @@ export async function aiScanUrl(url: string, prompt: string): Promise<string> {
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
   try {
     const res = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       contents: [{ role: 'user', parts: [{ text: `${normalizedUrl}\n\n${prompt}` }] }],
       config: { tools: [{ urlContext: {} }] },
     });
@@ -133,7 +133,7 @@ export async function aiAnalyzeImage(file: File, prompt: string): Promise<string
   const ai = getAI();
   const base64 = await fileToBase64(file);
   const res = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: [{
       role: 'user',
       parts: [
@@ -173,7 +173,7 @@ export async function aiAnalyzeDocument(file: File, prompt: string): Promise<str
   }
 
   const res = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: [{
       role: 'user',
       parts: [
