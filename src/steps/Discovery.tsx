@@ -15,6 +15,13 @@ export function ProblemStatement({ brief, onDone }: { brief: BriefData; onDone: 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (brief.websiteUrl && mode === 'choose' && !draft && !loading) {
+      setUrl(brief.websiteUrl);
+      generateFromUrl(brief.websiteUrl);
+    }
+  }, [brief.websiteUrl]);
+
   const generateFromUrl = async (targetUrl: string) => {
     setLoading(true);
     setLoadingMsg('Scanning website…');
@@ -169,7 +176,13 @@ export function SolutionDescription({ brief, onDone }: { brief: BriefData; onDon
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    aiGen(`For company "${brief.companyName}" with problem: "${brief.problemStatement}", write a 1-2 sentence Solution Description explaining how they solve it. Return ONLY the solution.`)
+    const prompt = `For company "${brief.companyName}" with problem: "${brief.problemStatement}", write a 1-2 sentence Solution Description explaining how they solve it. Return ONLY the solution.`;
+    
+    const request = brief.websiteUrl 
+      ? aiScanUrl(brief.websiteUrl, prompt) 
+      : aiGen(prompt);
+
+    request
       .then(t => { if (!cancelled) setDraft(t.trim()); })
       .catch(() => { if (!cancelled) setDraft(`${brief.companyName} solves this by [describe your solution].`); })
       .finally(() => { if (!cancelled) setLoading(false); });

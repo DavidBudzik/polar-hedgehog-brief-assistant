@@ -1,45 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 @import "tailwindcss";
 
 @theme {
+  /* Display / headings — matches Gilmer (geometric bold) */
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  /* Body — matches Merto Sans (humanist clean) */
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
-  --color-polar-pink: #EC008C;
-  --color-polar-blue: #010C83;
-  --color-polar-blue-light: #1A248F;
-  --color-polar-neutral-darkest: #2A3E5B;
-  --color-polar-neutral: #90A7D3;
-  --color-polar-visual: #D06352;
-  --color-polar-web: #33512E;
-  --color-polar-product: #245A62;
-  --color-polar-bg: #F7F8FF;
+  /* ── Primary brand ── */
+  --color-polar-pink:        #EC008C;
+  --color-polar-pink-hover:  #D4007E;
+  --color-polar-pink-light:  #FFF0F8;
+  --color-polar-blue:        #010C83;
+  --color-polar-blue-mid:    #1A248F;
+  --color-polar-blue-light:  #242FA0;
+
+  /* ── Neutrals ── */
+  --color-polar-slate-900:   #2A3E5B;
+  --color-polar-slate-500:   #90A7D3;
+  --color-polar-bg:          #F7F8FF;
+
+  /* ── Category / accent ── */
+  --color-polar-visual:      #D06352;
+  --color-polar-web:         #33512E;
+  --color-polar-product:     #245A62;
+  --color-polar-purple:      #8250E3;
 }
 
-/* Smooth scroll */
+/* ── Base ────────────────────────────────────────────────────── */
 html { scroll-behavior: smooth; }
 
-/* Better text rendering */
 body {
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* Refined focus ring */
+/* Display font on headings */
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
+}
+
+/* ── Focus ring ───────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid #EC008C;
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(1,12,131,0.12); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(1,12,131,0.22); }
 
-/* Respect reduced motion */
+/* ── Sidebar dark scrollbar ───────────────────────────────────── */
+.sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+.sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Reduced motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle2, Circle, ChevronRight } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { GeminiAssistant } from './GeminiAssistant';
 import { SettingsButton } from './Settings';
 import { INITIAL_BRIEF, STEPS_ORDER } from './types';
@@ -57,25 +57,22 @@ const NAV_SECTIONS = [
 function Sidebar({ step, completed }: { step: BriefStep; completed: Set<BriefStep> }) {
   const currentIdx = STEPS_ORDER.indexOf(step);
   return (
-    <div className="w-60 flex-shrink-0 bg-white border-r border-gray-100 overflow-y-auto flex flex-col">
+    <div className="w-64 flex-shrink-0 flex flex-col overflow-hidden" style={{ background: '#010C83' }}>
       {/* Logo */}
-      <div className="px-5 pt-6 pb-5 border-b border-gray-50">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-gradient-to-br from-[#EC008C] to-[#c4006e] rounded-lg flex items-center justify-center shadow-md shadow-[#EC008C]/20">
-            <span className="text-white font-black text-xs">P</span>
-          </div>
-          <div>
-            <p className="text-sm font-black text-[#010C83] tracking-tight">POLAR</p>
-            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest leading-none">Brand Brief</p>
-          </div>
-        </div>
+      <div className="px-5 pt-6 pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <img src="/logo-light.svg" alt="Polar Hedgehog" className="h-5 w-auto" />
+        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] mt-1.5" style={{ color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-sans)' }}>
+          Brand Brief
+        </p>
       </div>
 
       {/* Nav */}
-      <div className="flex-1 px-3 py-4 space-y-5 overflow-y-auto min-h-0">
+      <div className="flex-1 px-3 py-5 space-y-6 overflow-y-auto min-h-0 sidebar-scroll">
         {NAV_SECTIONS.map(sec => (
           <div key={sec.label}>
-            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-gray-300 px-2 mb-1.5">{sec.label}</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.14em] px-2.5 mb-2" style={{ color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)' }}>
+              {sec.label}
+            </p>
             <div className="space-y-0.5">
               {sec.steps.map(s => {
                 const sIdx = STEPS_ORDER.indexOf(s.id);
@@ -84,20 +81,26 @@ function Sidebar({ step, completed }: { step: BriefStep; completed: Set<BriefSte
                 const isLocked = sIdx > currentIdx && !isDone;
                 return (
                   <div key={s.id}
-                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11.5px] font-medium transition-all duration-150 ${
-                      isCurrent
-                        ? 'bg-gradient-to-r from-[#EC008C]/12 to-[#EC008C]/5 text-[#EC008C] font-semibold'
+                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11.5px] font-medium transition-all duration-150 ${isCurrent
+                        ? 'font-semibold'
+                        : ''
+                      }`}
+                    style={{
+                      background: isCurrent ? 'rgba(236,0,140,0.18)' : 'transparent',
+                      color: isCurrent
+                        ? '#EC008C'
                         : isDone
-                        ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-default'
-                        : isLocked
-                        ? 'text-gray-200 cursor-default'
-                        : 'text-gray-500 hover:bg-gray-50'
-                    }`}>
+                          ? 'rgba(255,255,255,0.45)'
+                          : isLocked
+                            ? 'rgba(255,255,255,0.18)'
+                            : 'rgba(255,255,255,0.62)',
+                      fontFamily: 'var(--font-sans)',
+                    }}>
                     {isDone
-                      ? <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
+                      ? <CheckCircle2 size={13} className="flex-shrink-0" style={{ color: '#4ade80' }} strokeWidth={2.5} />
                       : isCurrent
-                      ? <div className="w-1.5 h-1.5 rounded-full bg-[#EC008C] flex-shrink-0 shadow-sm shadow-[#EC008C]/50" />
-                      : <div className="w-1.5 h-1.5 rounded-full bg-gray-200 flex-shrink-0" />}
+                        ? <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#EC008C', boxShadow: '0 0 6px #EC008C88' }} />
+                        : <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.2)' }} />}
                     <span className="truncate">{s.label}</span>
                   </div>
                 );
@@ -108,15 +111,17 @@ function Sidebar({ step, completed }: { step: BriefStep; completed: Set<BriefSte
       </div>
 
       {/* Sidebar footer */}
-      <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-[10px] text-gray-300 font-medium">Polar Brief</span>
+      <div className="px-4 py-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)' }}>
+          polarhedgehog.com
+        </span>
         <SettingsButton />
       </div>
     </div>
   );
 }
 
-function ProgressBar({ step, completed }: { step: BriefStep; completed: Set<BriefStep> }) {
+function ProgressBar({ step }: { step: BriefStep; completed?: Set<BriefStep> }) {
   const clientSteps: BriefStep[] = STEPS_ORDER.filter(s => s !== 'setup' && s !== 'kickoff');
   const idx = clientSteps.indexOf(step);
   const pct = idx < 0 ? 0 : Math.round(((idx + 1) / clientSteps.length) * 100);
@@ -134,33 +139,36 @@ function ProgressBar({ step, completed }: { step: BriefStep; completed: Set<Brie
 
 function SubmittedScreen({ brief }: { brief: BriefData }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: 'radial-gradient(ellipse at 50% 0%, #fce7f3 0%, #fdf2f8 50%, #f8f7ff 100%)' }}>
-      <div className="text-center space-y-7 max-w-sm w-full">
-        <motion.div
-          initial={{ scale: 0.7, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          className="w-20 h-20 bg-gradient-to-br from-[#EC008C] to-[#c4006e] rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-[#EC008C]/25"
-        >
+    <div className="p-8 text-center space-y-8 max-w-sm w-full">
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        className="mx-auto"
+      >
+        <img src="/logo-dark.svg" alt="Polar Hedgehog" className="h-7 w-auto mx-auto mb-8" />
+        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-2xl" style={{ background: 'linear-gradient(135deg, #EC008C, #c4006e)', boxShadow: '0 20px 50px rgba(236,0,140,0.28)' }}>
           <CheckCircle2 size={34} className="text-white" strokeWidth={2.5} />
-        </motion.div>
-        <div>
-          <h2 className="text-3xl font-black text-[#010C83] tracking-tight mb-2">Brief Submitted!</h2>
-          <p className="text-gray-500 text-sm leading-relaxed">Thank you, <strong className="text-[#010C83]">{brief.companyName}</strong>. The Polar team will review your brief and be in touch shortly.</p>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          {[
-            ['Keywords', `${brief.keywords.length} selected`],
-            ['Messages', `${brief.brandMessages.length} approved`],
-            ['Competitors', `${brief.competitors.length} mapped`],
-            ['Reference Brands', `${brief.referenceBrands.length} added`],
-          ].map(([k, v]) => (
-            <div key={k} className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white shadow-sm text-left">
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">{k}</p>
-              <p className="text-sm font-bold text-[#010C83] mt-0.5">{v}</p>
-            </div>
-          ))}
-        </div>
+      </motion.div>
+      <div>
+        <h2 className="text-3xl font-black tracking-tight mb-2" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>Brief Submitted!</h2>
+        <p className="text-sm leading-relaxed" style={{ color: 'rgba(1,12,131,0.55)' }}>
+          Thank you, <strong style={{ color: '#010C83' }}>{brief.companyName}</strong>. The Polar Hedgehog team will review your brief and be in touch shortly.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        {[
+          ['Keywords', `${brief.keywords.length} selected`],
+          ['Messages', `${brief.brandMessages.length} approved`],
+          ['Competitors', `${brief.competitors.length} mapped`],
+          ['References', `${brief.referenceBrands.length} added`],
+        ].map(([k, v]) => (
+          <div key={k} className="bg-white rounded-2xl p-4 text-left" style={{ border: '1px solid rgba(1,12,131,0.07)', boxShadow: '0 2px 12px rgba(1,12,131,0.05)' }}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-0.5" style={{ color: 'rgba(1,12,131,0.4)' }}>{k}</p>
+            <p className="text-sm font-bold" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{v}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -182,8 +190,8 @@ export default function App() {
 
   if (step === 'setup') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 relative" style={{ background: 'radial-gradient(ellipse at 60% 0%, #fce7f3 0%, #fdf2f8 40%, #f8f7ff 100%)' }}>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,_rgba(1,12,131,0.04)_0%,_transparent_60%)] pointer-events-none" />
+      <div className="min-h-screen flex items-center justify-center p-6 relative" style={{ background: 'linear-gradient(135deg, #F7F8FF 0%, #EEF0FF 40%, #FDF0F8 100%)' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 20%, rgba(236,0,140,0.06) 0%, transparent 60%)' }} />
         <div className="absolute top-4 right-4">
           <SettingsButton />
         </div>
@@ -194,7 +202,8 @@ export default function App() {
 
   if (step === 'kickoff') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 relative" style={{ background: 'radial-gradient(ellipse at 60% 0%, #fce7f3 0%, #fdf2f8 40%, #f8f7ff 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center p-6 relative" style={{ background: 'linear-gradient(135deg, #F7F8FF 0%, #EEF0FF 40%, #FDF0F8 100%)' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 80%, rgba(1,12,131,0.05) 0%, transparent 60%)' }} />
         <div className="absolute top-4 right-4">
           <SettingsButton />
         </div>
@@ -205,33 +214,36 @@ export default function App() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#FFF8FC] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F7F8FF 0%, #EEF0FF 40%, #FDF0F8 100%)' }}>
         <SubmittedScreen brief={brief} />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#f9f6fe' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: '#F7F8FF' }}>
       <Sidebar step={step} completed={completed} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <ProgressBar step={step} completed={completed} />
+        <ProgressBar step={step} />
 
-        <div className="px-7 py-3.5 border-b border-gray-100/80 bg-white/95 backdrop-blur-sm flex items-center justify-between">
+        <div className="px-7 py-3.5 bg-white flex items-center justify-between" style={{ borderBottom: '1px solid rgba(1,12,131,0.06)' }}>
           <div>
-            <p className="text-[10px] font-semibold text-gray-300 uppercase tracking-[0.12em]">{brief.companyName}</p>
-            <p className="text-sm font-bold text-[#010C83] tracking-tight">{brief.projectType} Brief</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'rgba(1,12,131,0.35)', fontFamily: 'var(--font-sans)' }}>{brief.companyName}</p>
+            <p className="text-sm font-bold tracking-tight" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{brief.projectType} Brief</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 w-24 bg-gray-100 rounded-full overflow-hidden">
+          <div className="flex items-center gap-2.5">
+            <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(1,12,131,0.07)' }}>
               <div
-                className="h-full bg-gradient-to-r from-[#EC008C] to-[#f542a8] rounded-full transition-all duration-500"
-                style={{ width: `${Math.round((Math.max(0, completed.size - 2) / (STEPS_ORDER.length - 2)) * 100)}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.round((Math.max(0, completed.size - 2) / (STEPS_ORDER.length - 2)) * 100)}%`,
+                  background: 'linear-gradient(90deg, #EC008C, #f542a8)',
+                }}
               />
             </div>
-            <span className="text-[11px] font-semibold text-gray-400">
-              {Math.max(0, completed.size - 2)}<span className="text-gray-300">/{STEPS_ORDER.length - 2}</span>
+            <span className="text-[11px] font-semibold" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>
+              {Math.max(0, completed.size - 2)}<span style={{ color: 'rgba(1,12,131,0.25)' }}>/{STEPS_ORDER.length - 2}</span>
             </span>
           </div>
         </div>
@@ -302,6 +314,50 @@ export default function App() {
               </motion.div>
             </AnimatePresence>
           </div>
+        </div>
+
+        {/* Bottom Navigation */}
+        <div className="px-6 py-4 bg-white flex items-center justify-between z-10 relative" style={{ borderTop: '1px solid rgba(1,12,131,0.06)' }}>
+          {(() => {
+            const clientSteps = STEPS_ORDER.filter(s => s !== 'setup' && s !== 'kickoff');
+            const idx = clientSteps.indexOf(step);
+            const isFirst = idx <= 0;
+            const isLast = idx >= clientSteps.length - 1;
+            return (
+              <>
+                <button
+                  onClick={() => { if (!isFirst) setStep(clientSteps[idx - 1]); }}
+                  disabled={isFirst}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-150 cursor-pointer"
+                  style={{
+                    fontFamily: 'var(--font-sans)',
+                    border: '1px solid rgba(1,12,131,0.14)',
+                    color: isFirst ? 'rgba(1,12,131,0.25)' : 'rgba(1,12,131,0.65)',
+                    background: 'white',
+                    opacity: isFirst ? 0.5 : 1,
+                    cursor: isFirst ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => { if (!isLast) setStep(clientSteps[idx + 1]); }}
+                  disabled={isLast}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-150"
+                  style={{
+                    fontFamily: 'var(--font-sans)',
+                    border: '1px solid rgba(1,12,131,0.2)',
+                    color: isLast ? 'rgba(1,12,131,0.3)' : '#010C83',
+                    background: isLast ? 'transparent' : 'rgba(1,12,131,0.04)',
+                    opacity: isLast ? 0.5 : 1,
+                    cursor: isLast ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Next
+                </button>
+              </>
+            );
+          })()}
         </div>
       </div>
 

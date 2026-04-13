@@ -10,19 +10,41 @@ export const btn = (variant: 'primary' | 'secondary' | 'ghost' = 'primary', extr
      variant === 'secondary' ? 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50' :
      'text-gray-500 hover:text-gray-800 hover:bg-gray-100'} ${extra}`;
 
-export function PolarButton({ children, onClick, variant = 'primary', className = '', disabled = false }: {
-  children: React.ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'outline' | 'ghost'; className?: string; disabled?: boolean;
+export function PolarButton({ children, onClick, variant = 'primary', className = '', disabled = false, style }: {
+  children: React.ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'outline' | 'ghost'; className?: string; disabled?: boolean; style?: React.CSSProperties;
 }) {
-  const base = 'px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 text-sm cursor-pointer select-none';
-  const styles = {
-    primary: `bg-gradient-to-r from-[#EC008C] to-[#d4007e] text-white hover:shadow-lg hover:shadow-[#EC008C]/25 hover:-translate-y-0.5 shadow-md shadow-[#EC008C]/15`,
-    secondary: 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm',
-    outline: 'border-2 border-[#EC008C] text-[#EC008C] hover:bg-[#EC008C]/5 hover:shadow-sm',
-    ghost: 'text-gray-500 hover:text-gray-800 hover:bg-gray-100',
+  const base = 'px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 text-sm select-none';
+
+  const inlineStyles: React.CSSProperties = {
+    fontFamily: 'var(--font-sans)',
+    ...(variant === 'primary' ? {
+      background: 'linear-gradient(135deg, #EC008C 0%, #d4007e 100%)',
+      color: 'white',
+      boxShadow: '0 4px 16px rgba(236,0,140,0.28)',
+    } : variant === 'secondary' ? {
+      background: 'white',
+      border: '1px solid rgba(1,12,131,0.14)',
+      color: 'rgba(1,12,131,0.75)',
+    } : variant === 'outline' ? {
+      border: '1.5px solid #EC008C',
+      color: '#EC008C',
+      background: 'transparent',
+    } : {
+      color: 'rgba(1,12,131,0.5)',
+      background: 'transparent',
+    }),
+    opacity: disabled ? 0.4 : 1,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    ...style,
   };
+
   return (
-    <button onClick={onClick} disabled={disabled}
-      className={`${base} ${styles[variant]} ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''} ${className}`}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${base} ${variant === 'primary' ? 'hover:-translate-y-px' : variant === 'secondary' ? 'hover:bg-gray-50' : variant === 'ghost' ? 'hover:bg-[rgba(1,12,131,0.05)]' : ''} ${disabled ? 'pointer-events-none' : ''} ${className}`}
+      style={inlineStyles}
+    >
       {children}
     </button>
   );
@@ -34,13 +56,14 @@ export function Card({ children, title, icon: Icon }: { children: React.ReactNod
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="bg-white border border-gray-100/80 rounded-2xl p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)] w-full ring-1 ring-black/[0.03]"
+      className="bg-white w-full rounded-2xl p-6"
+      style={{ border: '1px solid rgba(1,12,131,0.07)', boxShadow: '0 2px 20px rgba(1,12,131,0.06)' }}
     >
       <div className="flex items-center gap-3 mb-5">
-        <div className="p-2 bg-gradient-to-br from-[#FFF0F8] to-[#FFE4F5] rounded-xl text-[#EC008C] shadow-sm">
+        <div className="p-2 rounded-xl" style={{ background: 'rgba(236,0,140,0.08)', color: '#EC008C' }}>
           <Icon size={17} />
         </div>
-        <h3 className="font-bold text-[#010C83] text-sm tracking-[-0.01em]">{title}</h3>
+        <h3 className="font-bold text-sm tracking-tight" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{title}</h3>
       </div>
       {children}
     </motion.div>
@@ -71,23 +94,36 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
   return res.text || '';
 }
 
-// ── URL scanning via Gemini urlContext tool ────────────────────────────────────
-// Gemini 2.0 Flash can fetch and read any public URL natively.
+// ── URL scanning via Jina Reader Proxy ───────────────────────────────────────
+// Uses r.jina.ai to cleanly extract website text, bypassing CORS and model limitations
 export async function aiScanUrl(url: string, prompt: string): Promise<string> {
-  const ai = getAI();
-  const res = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
-    contents: [{
-      role: 'user',
-      parts: [{ text: `${prompt}\n\nWebsite URL: ${url}` }],
-    }],
-    config: {
-      tools: [{ urlContext: {} }],
-    },
-  });
-  return res.text || '';
-}
+  let websiteText = '';
+  let fetchFailed = false;
+  try {
+    const response = await fetch(`https://r.jina.ai/${url}`);
+    if (response.ok) {
+      websiteText = await response.text();
+    } else {
+      console.warn('Failed to fetch website from Jina:', response.status);
+      fetchFailed = true;
+    }
+  } catch (err) {
+    console.error('Error fetching via Jina:', err);
+    fetchFailed = true;
+  }
 
+  // If Jina failed or returned barely anything, fallback to just asking the model to guess based on the URL name
+  if (fetchFailed || websiteText.length < 50) {
+    const fallbackResponse = await aiGen(`${prompt}\n\nNote: I could not scrape the website. Please generate your best response based on the company's URL: ${url}`);
+    return fallbackResponse || '(AI was unable to generate a response for this website)';
+  }
+
+  // Pass the extracted text into the standard generation prompt.
+  // We place the large context FIRST and the instruction LAST so the LLM doesn't lose the instruction context.
+  const finalResponse = await aiGen(`Here is the scraped markdown content of the website (${url}):\n\n<website_content>\n${websiteText.substring(0, 50000)}\n</website_content>\n\nBased on the website content above, please follow this instruction explicitly:\n${prompt}`);
+  
+  return finalResponse || '(AI returned an empty response. Try refreshing or typing manually.)';
+}
 // ── Image analysis (logo, brand assets) ───────────────────────────────────────
 // Converts a File to base64 and sends it as inline data to Gemini vision.
 export function fileToBase64(file: File): Promise<string> {

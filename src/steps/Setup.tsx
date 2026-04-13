@@ -1,51 +1,75 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Sparkles, ArrowRight, Briefcase } from 'lucide-react';
 import { PolarButton, Card } from '../shared';
 import type { BriefData } from '../types';
 
-export function KickoffSetup({ onDone }: { onDone: (data: Pick<BriefData, 'companyName' | 'projectType' | 'projectDate'>) => void }) {
+const inputClass = 'w-full rounded-xl px-4 py-3 text-sm transition-all duration-200 focus:outline-none';
+const inputStyle: React.CSSProperties = {
+  background: 'rgba(1,12,131,0.03)',
+  border: '1px solid rgba(1,12,131,0.12)',
+  color: '#010C83',
+  fontFamily: 'var(--font-sans)',
+};
+const labelStyle: React.CSSProperties = {
+  fontSize: '10px',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.12em',
+  color: 'rgba(1,12,131,0.45)',
+  fontFamily: 'var(--font-sans)',
+};
+
+export function KickoffSetup({ onDone }: { onDone: (data: Pick<BriefData, 'companyName' | 'projectType' | 'projectDate' | 'websiteUrl'>) => void }) {
   const types = ['Branding', 'Rebranding', 'Brand Refresh', 'Sub-brand'];
-  const [form, setForm] = useState({ companyName: '', projectType: 'Branding', projectDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) });
+  const [form, setForm] = useState({ companyName: '', websiteUrl: '', projectType: 'Branding', projectDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) });
 
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="w-8 h-8 bg-gradient-to-br from-[#EC008C] to-[#c4006e] rounded-lg flex items-center justify-center shadow-md shadow-[#EC008C]/20">
-            <span className="text-white font-black text-xs">P</span>
-          </div>
-          <span className="text-sm font-black text-[#010C83] tracking-tight">POLAR</span>
-        </div>
-        <h2 className="text-2xl font-black text-[#010C83] tracking-tight mb-1.5">Configure Brief</h2>
-        <p className="text-gray-400 text-sm">Set up the client brief before sending.</p>
+        <img src="/logo-dark.svg" alt="Polar Hedgehog" className="h-6 w-auto mb-7" />
+        <h2 className="text-2xl font-black tracking-tight mb-1.5" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>Configure Brief</h2>
+        <p className="text-sm" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>Set up the client brief before sending.</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_20px_rgba(0,0,0,0.07)] p-7 space-y-5">
+      <div className="bg-white rounded-2xl p-7 space-y-5" style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
         <div className="space-y-1.5">
-          <label htmlFor="companyName" className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 block">
-            Company Name
-          </label>
+          <label htmlFor="companyName" style={labelStyle}>Company Name</label>
           <input
             id="companyName"
             value={form.companyName}
             onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
             placeholder="Acme Corp"
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#EC008C]/40 focus:bg-white focus:ring-2 focus:ring-[#EC008C]/8 transition-all duration-200"
+            className={inputClass}
+            style={{ ...inputStyle, ...(form.companyName ? { borderColor: 'rgba(1,12,131,0.25)' } : {}) }}
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 block">Project Type</label>
+          <label htmlFor="websiteUrl" style={labelStyle}>Website URL <span style={{ color: 'rgba(1,12,131,0.28)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+          <input
+            id="websiteUrl"
+            value={form.websiteUrl}
+            onChange={e => setForm(f => ({ ...f, websiteUrl: e.target.value }))}
+            placeholder="https://acmecorp.com"
+            className={inputClass}
+            style={inputStyle}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label style={labelStyle}>Project Type</label>
           <div className="flex flex-wrap gap-2">
             {types.map(t => (
               <button
                 key={t}
                 onClick={() => setForm(f => ({ ...f, projectType: t }))}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 cursor-pointer ${
-                  form.projectType === t
-                    ? 'bg-gradient-to-r from-[#EC008C] to-[#d4007e] text-white border-transparent shadow-md shadow-[#EC008C]/20'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-                }`}>
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer"
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  ...(form.projectType === t
+                    ? { background: 'linear-gradient(135deg, #EC008C, #d4007e)', color: 'white', boxShadow: '0 3px 10px rgba(236,0,140,0.25)' }
+                    : { background: 'white', color: 'rgba(1,12,131,0.55)', border: '1px solid rgba(1,12,131,0.12)' }),
+                }}>
                 {t}
               </button>
             ))}
@@ -53,12 +77,13 @@ export function KickoffSetup({ onDone }: { onDone: (data: Pick<BriefData, 'compa
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="projectDate" className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 block">Date</label>
+          <label htmlFor="projectDate" style={labelStyle}>Date</label>
           <input
             id="projectDate"
             value={form.projectDate}
             onChange={e => setForm(f => ({ ...f, projectDate: e.target.value }))}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#EC008C]/40 focus:bg-white focus:ring-2 focus:ring-[#EC008C]/8 transition-all duration-200"
+            className={inputClass}
+            style={inputStyle}
           />
         </div>
 
@@ -74,19 +99,22 @@ export function KickoffConfirmation({ brief, onConfirm }: { brief: BriefData; on
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="text-center mb-8">
-        <div className="w-14 h-14 bg-gradient-to-br from-[#EC008C] to-[#c4006e] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-xl shadow-[#EC008C]/25">
-          <Sparkles size={24} className="text-white" />
+        <img src="/logo-dark.svg" alt="Polar Hedgehog" className="h-6 w-auto mx-auto mb-7" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'linear-gradient(135deg, #EC008C, #c4006e)', boxShadow: '0 12px 32px rgba(236,0,140,0.28)' }}>
+          <Sparkles size={22} className="text-white" />
         </div>
-        <h2 className="text-2xl font-black text-[#010C83] tracking-tight mb-1.5">Welcome to your<br />Polar Brief</h2>
-        <p className="text-gray-400 text-sm">Please confirm your project details to get started.</p>
+        <h2 className="text-2xl font-black tracking-tight mb-1.5" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>
+          Welcome to your<br />Polar Brief
+        </h2>
+        <p className="text-sm" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>Please confirm your project details to get started.</p>
       </div>
       <Card title="Project Kickoff" icon={Briefcase}>
         <div className="space-y-5">
-          <div className="bg-gradient-to-br from-[#FFF0F8]/60 to-[#f8f4ff]/40 rounded-xl p-4 space-y-3 border border-[#EC008C]/8">
-            {[['Company', brief.companyName], ['Project Type', brief.projectType], ['Date', brief.projectDate]].map(([label, value]) => (
+          <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(1,12,131,0.03)', border: '1px solid rgba(1,12,131,0.07)' }}>
+            {[['Company', brief.companyName], ['Website', brief.websiteUrl || 'N/A'], ['Project Type', brief.projectType], ['Date', brief.projectDate]].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-400">{label}</span>
-                <span className="text-sm font-bold text-[#010C83]">{value}</span>
+                <span style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>{label}</span>
+                <span className="text-sm font-bold" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{value}</span>
               </div>
             ))}
           </div>
