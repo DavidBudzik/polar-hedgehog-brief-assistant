@@ -1,54 +1,45 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Sparkles } from 'lucide-react';
 import { GeminiAssistant } from './GeminiAssistant';
 import { SettingsButton } from './Settings';
 import { INITIAL_BRIEF, STEPS_ORDER } from './types';
 import type { BriefData, BriefStep } from './types';
 
 // Steps
-import { KickoffSetup, KickoffConfirmation } from './steps/Setup';
-import { ProblemStatement, SolutionDescription, CompetitorEntry, UVPRating, FeatureBuilder } from './steps/Discovery';
-import { CompanyNameMeaning, LogoRationale, VisualLanguageRationale } from './steps/BrandAudit';
-import { KeywordSelection, BrandMessages, ValuePicker, VisualDirectionForm } from './steps/BrandDirection';
-import { ReferenceBrands, LogoStyleSelector, ColorPaletteSelector, SummaryReview } from './steps/VisualPrefs';
+import { CompanySetup } from './steps/Setup';
+import { ProblemSolution, MarketPosition, Product } from './steps/Discovery';
+import { BrandAudit } from './steps/BrandAudit';
+import { BrandVoice, BrandValuesDirection } from './steps/BrandDirection';
+import { VisualReferences, SummaryReview } from './steps/VisualPrefs';
 
 // ── Sidebar nav ────────────────────────────────────────────────────────────────
 const NAV_SECTIONS = [
   {
     label: 'Discovery',
     steps: [
-      { id: 'problem_statement' as BriefStep, label: 'Problem Statement' },
-      { id: 'solution_description' as BriefStep, label: 'Solution' },
-      { id: 'competitors' as BriefStep, label: 'Competitors' },
-      { id: 'uvp' as BriefStep, label: 'Unique Value Prop' },
-      { id: 'features' as BriefStep, label: 'Features' },
+      { id: 'problem_solution' as BriefStep, label: 'Problem & Solution' },
+      { id: 'market_position' as BriefStep, label: 'Market & Competitors' },
+      { id: 'product' as BriefStep, label: 'Product Features' },
     ],
   },
   {
     label: 'Brand Audit',
     steps: [
-      { id: 'company_name_meaning' as BriefStep, label: 'Name Meaning' },
-      { id: 'logo_rationale' as BriefStep, label: 'Logo Rationale' },
-      { id: 'visual_language_rationale' as BriefStep, label: 'Visual Language' },
+      { id: 'brand_audit' as BriefStep, label: 'Brand Audit' },
     ],
   },
   {
     label: 'Brand Direction',
     steps: [
-      { id: 'keywords' as BriefStep, label: 'Keywords' },
-      { id: 'brand_messages' as BriefStep, label: 'Brand Messages' },
-      { id: 'value_picker' as BriefStep, label: 'Core Values' },
-      { id: 'visual_direction_v1' as BriefStep, label: 'Visual Direction 1' },
-      { id: 'visual_direction_v2' as BriefStep, label: 'Visual Direction 2' },
+      { id: 'brand_voice' as BriefStep, label: 'Voice & Keywords' },
+      { id: 'brand_values_direction' as BriefStep, label: 'Values & Direction' },
     ],
   },
   {
     label: 'Visual Preferences',
     steps: [
-      { id: 'reference_brands' as BriefStep, label: 'Reference Brands' },
-      { id: 'logo_style' as BriefStep, label: 'Logo Style' },
-      { id: 'color_palette' as BriefStep, label: 'Color Palette' },
+      { id: 'visual_references' as BriefStep, label: 'Visual References' },
       { id: 'summary' as BriefStep, label: 'Summary' },
     ],
   },
@@ -82,8 +73,8 @@ function Sidebar({ step, completed }: { step: BriefStep; completed: Set<BriefSte
                 return (
                   <div key={s.id}
                     className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11.5px] font-medium transition-all duration-150 ${isCurrent
-                        ? 'font-semibold'
-                        : ''
+                      ? 'font-semibold'
+                      : ''
                       }`}
                     style={{
                       background: isCurrent ? 'rgba(236,0,140,0.18)' : 'transparent',
@@ -122,7 +113,7 @@ function Sidebar({ step, completed }: { step: BriefStep; completed: Set<BriefSte
 }
 
 function ProgressBar({ step }: { step: BriefStep; completed?: Set<BriefStep> }) {
-  const clientSteps: BriefStep[] = STEPS_ORDER.filter(s => s !== 'setup' && s !== 'kickoff');
+  const clientSteps: BriefStep[] = STEPS_ORDER.filter(s => s !== 'setup');
   const idx = clientSteps.indexOf(step);
   const pct = idx < 0 ? 0 : Math.round(((idx + 1) / clientSteps.length) * 100);
   return (
@@ -179,6 +170,7 @@ export default function App() {
   const [step, setStep] = useState<BriefStep>('setup');
   const [completed, setCompleted] = useState<Set<BriefStep>>(new Set());
   const [submitted, setSubmitted] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const markDone = (s: BriefStep) => setCompleted(p => new Set([...p, s]));
   const next = (s: BriefStep) => {
@@ -195,19 +187,7 @@ export default function App() {
         <div className="absolute top-4 right-4">
           <SettingsButton />
         </div>
-        <KickoffSetup onDone={data => { upd(data); next('setup'); }} />
-      </div>
-    );
-  }
-
-  if (step === 'kickoff') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 relative" style={{ background: 'linear-gradient(135deg, #F7F8FF 0%, #EEF0FF 40%, #FDF0F8 100%)' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 20% 80%, rgba(1,12,131,0.05) 0%, transparent 60%)' }} />
-        <div className="absolute top-4 right-4">
-          <SettingsButton />
-        </div>
-        <KickoffConfirmation brief={brief} onConfirm={() => next('kickoff')} />
+        <CompanySetup onDone={data => { upd(data); next('setup'); }} />
       </div>
     );
   }
@@ -228,9 +208,25 @@ export default function App() {
         <ProgressBar step={step} />
 
         <div className="px-7 py-3.5 bg-white flex items-center justify-between" style={{ borderBottom: '1px solid rgba(1,12,131,0.06)' }}>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'rgba(1,12,131,0.35)', fontFamily: 'var(--font-sans)' }}>{brief.companyName}</p>
-            <p className="text-sm font-bold tracking-tight" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{brief.projectType} Brief</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setAiOpen(o => !o)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-150"
+              style={{
+                background: aiOpen ? '#EC008C' : 'rgba(236,0,140,0.08)',
+                color: aiOpen ? 'white' : '#EC008C',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              <Sparkles size={14} />
+              AI
+            </button>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'rgba(1,12,131,0.35)', fontFamily: 'var(--font-sans)' }}>{brief.companyName}</p>
+              <p className="text-sm font-bold tracking-tight" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{brief.projectType} Brief</p>
+            </div>
           </div>
           <div className="flex items-center gap-2.5">
             <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(1,12,131,0.07)' }}>
@@ -253,59 +249,26 @@ export default function App() {
             <AnimatePresence mode="wait">
               <motion.div key={step} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
 
-                {step === 'problem_statement' && (
-                  <ProblemStatement brief={brief} onDone={d => { upd({ problemStatement: d.text, websiteUrl: d.url, scanSource: d.source }); next('problem_statement'); }} />
+                {step === 'problem_solution' && (
+                  <ProblemSolution brief={brief} onDone={d => { upd(d); next('problem_solution'); }} />
                 )}
-                {step === 'solution_description' && (
-                  <SolutionDescription brief={brief} onDone={text => { upd({ solutionDescription: text }); next('solution_description'); }} />
+                {step === 'market_position' && (
+                  <MarketPosition brief={brief} onDone={d => { upd(d); next('market_position'); }} />
                 )}
-                {step === 'competitors' && (
-                  <CompetitorEntry onDone={comps => { upd({ competitors: comps }); next('competitors'); }} />
+                {step === 'product' && (
+                  <Product brief={brief} onDone={features => { upd({ features }); next('product'); }} />
                 )}
-                {step === 'uvp' && (
-                  <UVPRating brief={brief} onDone={uvps => { upd({ uvp: uvps }); next('uvp'); }} />
+                {step === 'brand_audit' && (
+                  <BrandAudit brief={brief} onDone={d => { upd(d); next('brand_audit'); }} />
                 )}
-                {step === 'features' && (
-                  <FeatureBuilder brief={brief} onDone={features => { upd({ features }); next('features'); }} />
+                {step === 'brand_voice' && (
+                  <BrandVoice brief={brief} onDone={d => { upd(d); next('brand_voice'); }} />
                 )}
-                {step === 'company_name_meaning' && (
-                  <CompanyNameMeaning brief={brief} onDone={text => { upd({ companyNameMeaning: text }); next('company_name_meaning'); }} />
+                {step === 'brand_values_direction' && (
+                  <BrandValuesDirection brief={brief} onDone={d => { upd(d); next('brand_values_direction'); }} />
                 )}
-                {step === 'logo_rationale' && (
-                  <LogoRationale brief={brief} onDone={d => { upd({ logoRationale: d.rationale, logoRationaleChips: d.chips }); next('logo_rationale'); }} />
-                )}
-                {step === 'visual_language_rationale' && (
-                  <VisualLanguageRationale brief={brief} onDone={d => { upd({ visualLanguageRationale: d.summary, visualLanguageSliders: d.sliders }); next('visual_language_rationale'); }} />
-                )}
-                {step === 'keywords' && (
-                  <KeywordSelection brief={brief} onDone={kw => { upd({ keywords: kw }); next('keywords'); }} />
-                )}
-                {step === 'brand_messages' && (
-                  <BrandMessages brief={brief} onDone={msgs => { upd({ brandMessages: msgs }); next('brand_messages'); }} />
-                )}
-                {step === 'value_picker' && (
-                  <ValuePicker brief={brief} onDone={vals => { upd({ selectedValues: vals }); next('value_picker'); }} />
-                )}
-                {step === 'visual_direction_v1' && (
-                  <VisualDirectionForm step="v1" brief={brief} onDone={form => {
-                    upd({ visualDirection: { ...brief.visualDirection, value1: { valueName: brief.selectedValues[0] || 'Value 1', ...form } } });
-                    next('visual_direction_v1');
-                  }} />
-                )}
-                {step === 'visual_direction_v2' && (
-                  <VisualDirectionForm step="v2" brief={brief} onDone={form => {
-                    upd({ visualDirection: { ...brief.visualDirection, value2: { valueName: brief.selectedValues[1] || 'Value 2', ...form } } });
-                    next('visual_direction_v2');
-                  }} />
-                )}
-                {step === 'reference_brands' && (
-                  <ReferenceBrands brief={brief} onDone={brands => { upd({ referenceBrands: brands }); next('reference_brands'); }} />
-                )}
-                {step === 'logo_style' && (
-                  <LogoStyleSelector brief={brief} onDone={(style, open) => { upd({ logoStyle: style, logoOpenToRecommendations: open }); next('logo_style'); }} />
-                )}
-                {step === 'color_palette' && (
-                  <ColorPaletteSelector brief={brief} onDone={(approach, ratings) => { upd({ colorPaletteApproach: approach, colorSwatchRatings: ratings }); next('color_palette'); }} />
+                {step === 'visual_references' && (
+                  <VisualReferences brief={brief} onDone={d => { upd(d); next('visual_references'); }} />
                 )}
                 {step === 'summary' && (
                   <SummaryReview brief={brief} onDone={() => { markDone('summary'); setSubmitted(true); }} />
@@ -319,7 +282,7 @@ export default function App() {
         {/* Bottom Navigation */}
         <div className="px-6 py-4 bg-white flex items-center justify-between z-10 relative" style={{ borderTop: '1px solid rgba(1,12,131,0.06)' }}>
           {(() => {
-            const clientSteps = STEPS_ORDER.filter(s => s !== 'setup' && s !== 'kickoff');
+            const clientSteps = STEPS_ORDER.filter(s => s !== 'setup');
             const idx = clientSteps.indexOf(step);
             const isFirst = idx <= 0;
             const isLast = idx >= clientSteps.length - 1;
@@ -361,7 +324,7 @@ export default function App() {
         </div>
       </div>
 
-      <GeminiAssistant />
+      <GeminiAssistant isOpen={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 }
