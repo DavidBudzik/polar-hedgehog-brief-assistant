@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, Briefcase } from 'lucide-react';
-import { PolarButton, Card } from '../shared';
+import { ArrowRight } from 'lucide-react';
+import { PolarButton } from '../shared';
 import type { BriefData } from '../types';
 
 const inputClass = 'w-full rounded-xl px-4 py-3 text-sm transition-all duration-200 focus:outline-none';
@@ -19,16 +19,27 @@ const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
 };
 
-export function KickoffSetup({ onDone }: { onDone: (data: Pick<BriefData, 'companyName' | 'projectType' | 'projectDate' | 'websiteUrl'>) => void }) {
+export function CompanySetup({ onDone }: {
+  onDone: (data: Pick<BriefData, 'companyName' | 'projectType' | 'projectDate' | 'websiteUrl' | 'scanSource'>) => void;
+}) {
   const types = ['Branding', 'Rebranding', 'Brand Refresh', 'Sub-brand'];
-  const [form, setForm] = useState({ companyName: '', websiteUrl: '', projectType: 'Branding', projectDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) });
+  const [form, setForm] = useState({
+    companyName: '',
+    websiteUrl: '',
+    projectType: 'Branding',
+    projectDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+  });
 
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="mb-8">
         <img src="/logo-dark.svg" alt="Polar Hedgehog" className="h-6 w-auto mb-7" />
-        <h2 className="text-2xl font-black tracking-tight mb-1.5" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>Configure Brief</h2>
-        <p className="text-sm" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>Set up the client brief before sending.</p>
+        <h2 className="text-2xl font-black tracking-tight mb-1.5" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>
+          Let's set up your brief
+        </h2>
+        <p className="text-sm" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>
+          A few quick details to get started.
+        </p>
       </div>
 
       <div className="bg-white rounded-2xl p-7 space-y-5" style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
@@ -45,7 +56,12 @@ export function KickoffSetup({ onDone }: { onDone: (data: Pick<BriefData, 'compa
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="websiteUrl" style={labelStyle}>Website URL <span style={{ color: 'rgba(1,12,131,0.28)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+          <label htmlFor="websiteUrl" style={labelStyle}>
+            Website URL{' '}
+            <span style={{ color: 'rgba(1,12,131,0.28)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+              (optional — AI will scan it)
+            </span>
+          </label>
           <input
             id="websiteUrl"
             value={form.websiteUrl}
@@ -87,42 +103,14 @@ export function KickoffSetup({ onDone }: { onDone: (data: Pick<BriefData, 'compa
           />
         </div>
 
-        <PolarButton className="w-full h-11 text-sm mt-1" disabled={!form.companyName.trim()} onClick={() => onDone(form)}>
-          Send Brief to Client <ArrowRight size={15} />
+        <PolarButton
+          className="w-full h-11 text-sm mt-1"
+          disabled={!form.companyName.trim()}
+          onClick={() => onDone({ ...form, scanSource: form.websiteUrl || '' })}
+        >
+          Start Brief <ArrowRight size={15} />
         </PolarButton>
       </div>
-    </div>
-  );
-}
-
-export function KickoffConfirmation({ brief, onConfirm }: { brief: BriefData; onConfirm: () => void }) {
-  return (
-    <div className="w-full max-w-sm mx-auto">
-      <div className="text-center mb-8">
-        <img src="/logo-dark.svg" alt="Polar Hedgehog" className="h-6 w-auto mx-auto mb-7" />
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'linear-gradient(135deg, #EC008C, #c4006e)', boxShadow: '0 12px 32px rgba(236,0,140,0.28)' }}>
-          <Sparkles size={22} className="text-white" />
-        </div>
-        <h2 className="text-2xl font-black tracking-tight mb-1.5" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>
-          Welcome to your<br />Polar Brief
-        </h2>
-        <p className="text-sm" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>Please confirm your project details to get started.</p>
-      </div>
-      <Card title="Project Kickoff" icon={Briefcase}>
-        <div className="space-y-5">
-          <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(1,12,131,0.03)', border: '1px solid rgba(1,12,131,0.07)' }}>
-            {[['Company', brief.companyName], ['Website', brief.websiteUrl || 'N/A'], ['Project Type', brief.projectType], ['Date', brief.projectDate]].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between">
-                <span style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>{label}</span>
-                <span className="text-sm font-bold" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{value}</span>
-              </div>
-            ))}
-          </div>
-          <PolarButton className="w-full h-11" onClick={onConfirm}>
-            Looks good, let's start <ArrowRight size={15} />
-          </PolarButton>
-        </div>
-      </Card>
     </div>
   );
 }
