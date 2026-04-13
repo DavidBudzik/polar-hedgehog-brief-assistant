@@ -1,202 +1,432 @@
 import { useState, useEffect } from 'react';
-import { Palette, MessageSquare, Star, Layers, RefreshCw, ThumbsUp, ThumbsDown, ArrowRight, Loader2, Check, Image, CheckCircle2 } from 'lucide-react';
-import { PolarButton, Card, aiGen } from '../shared';
+import { ArrowRight, Loader2, Check, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { PolarButton, aiGen } from '../shared';
+import { MoodBoard } from '../components/MoodBoard';
 import type { BriefData } from '../types';
 
-const KW_ICONS: Record<string, string> = { Innovative: '⚡', Trustworthy: '🛡', Bold: '🔥', Minimalist: '○', Playful: '😊', Professional: '💼', Elegant: '★', 'Tech-forward': '💻', 'Human-centric': '🫂', Sustainable: '🌿', Fast: '⚡', Secure: '🔒', Accessible: '♿', Premium: '👑', Disruptive: '⚡', Authentic: '✓', Empowering: '🚀', Precise: '🎯', Global: '🌍', Collaborative: '🤝' };
+const BASE_KEYWORDS = [
+  'Innovative', 'Trustworthy', 'Bold', 'Minimalist', 'Playful', 'Professional',
+  'Disruptive', 'Elegant', 'Tech-forward', 'Human-centric', 'Sustainable',
+  'Fast', 'Secure', 'Accessible', 'Premium', 'Authentic', 'Empowering',
+  'Precise', 'Global', 'Collaborative',
+];
 
-// ── Keywords ───────────────────────────────────────────────────────────────────
-export function KeywordSelection({ brief, onDone }: { brief: BriefData; onDone: (kw: string[]) => void }) {
-  const base = ['Innovative','Trustworthy','Bold','Minimalist','Playful','Professional','Disruptive','Elegant','Tech-forward','Human-centric','Sustainable','Fast','Secure','Accessible','Premium','Authentic','Empowering','Precise','Global','Collaborative'];
-  const [aiRecs, setAiRecs] = useState<string[]>([]);
-  const [all, setAll] = useState(base);
-  const [sel, setSel] = useState<string[]>([]);
+const labelStyle: React.CSSProperties = {
+  fontSize: '10px',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.12em',
+  color: 'rgba(1,12,131,0.45)',
+  fontFamily: 'var(--font-sans)',
+};
+
+// ── BrandVoice ────────────────────────────────────────────────────────────────
+
+type BrandVoiceDone = Pick<BriefData, 'keywords' | 'brandMessages'>;
+
+export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: BrandVoiceDone) => void }) {
+  const [all, setAll] = useState(BASE_KEYWORDS);
+  const [sel, setSel] = useState<string[]>(brief.keywords.length ? brief.keywords : []);
   const [custom, setCustom] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [aiRecs, setAiRecs] = useState<string[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    aiGen(`For company "${brief.companyName}" solving "${brief.problemStatement}", recommend 5 brand keywords from: ${base.join(', ')}. JSON array.`, true)
-      .then(r => { if (!cancelled) setAiRecs(JSON.parse(r)); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
-    setLoading(true);
-    return () => { cancelled = true; };
-  }, []);
-
-  const tog = (k: string) => { if (sel.includes(k)) setSel(p => p.filter(s => s !== k)); else if (sel.length < 7) setSel(p => [...p, k]); };
-  const addCustom = () => { if (!custom || all.includes(custom)) return; setAll(p => [...p, custom]); if (sel.length < 7) setSel(p => [...p, custom]); setCustom(''); };
-
-  return (
-    <Card title="Brand Keyword Selection" icon={Palette}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400">Select 6–7 keywords (<span className="font-bold text-[#EC008C]">{sel.length}/7</span>)</p>
-          {loading && <Loader2 size={14} className="animate-spin text-[#EC008C]" />}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {all.map(k => (
-            <button key={k} onClick={() => tog(k)}
-              className={`relative px-4 py-2 rounded-full text-xs font-medium transition-all border ${sel.includes(k) ? 'bg-[#EC008C] text-white border-[#EC008C] shadow-md' : 'bg-white text-gray-500 border-gray-100 hover:border-[#EC008C]/30'}`}>
-              {k}
-              {aiRecs.includes(k) && !sel.includes(k) && <span className="absolute -top-1.5 -right-1 text-[9px] text-[#EC008C] font-black">✦</span>}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input value={custom} onChange={e => setCustom(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustom()} placeholder="Add custom keyword…"
-            className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#EC008C]/30" />
-          <button onClick={addCustom} className="px-4 py-2 bg-[#010C83]/5 text-[#010C83] rounded-xl text-xs font-bold hover:bg-[#010C83]/10 transition-all">Add</button>
-        </div>
-        {aiRecs.length > 0 && <p className="text-[10px] text-gray-400"><span className="text-[#EC008C] font-black">✦</span> = AI recommended</p>}
-        <PolarButton disabled={sel.length < 6} onClick={() => onDone(sel)} className="w-full">Lock Keywords <ArrowRight size={16} /></PolarButton>
-      </div>
-    </Card>
-  );
-}
-
-// ── Brand Messages ─────────────────────────────────────────────────────────────
-export function BrandMessages({ brief, onDone }: { brief: BriefData; onDone: (msgs: BriefData['brandMessages']) => void }) {
+  // messages state
   type Msg = { keyword: string; message: string; approved: boolean; alts: string[]; rating: 'up' | 'down' | '' };
-  const [items, setItems] = useState<Msg[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [generatingMsgs, setGeneratingMsgs] = useState(false);
+  const [phase, setPhase] = useState<'keywords' | 'messages'>('keywords');
 
+  // ── keyword helpers ──
   useEffect(() => {
-    let cancelled = false;
-    aiGen(`For brand "${brief.companyName}", write one brand manifesto message per keyword: ${brief.keywords.join(', ')}. Bold, specific. JSON array of {keyword, message}.`, true)
-      .then(r => { if (!cancelled) setItems(JSON.parse(r).map((d: any) => ({ ...d, approved: false, alts: [], rating: '' }))); })
-      .catch(() => { if (!cancelled) setItems(brief.keywords.map(k => ({ keyword: k, message: `We believe ${k.toLowerCase()} is the foundation of everything we build.`, approved: false, alts: [], rating: '' }))); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    if (!brief.problemStatement) return;
+    setLoadingRecs(true);
+    aiGen(
+      `For company "${brief.companyName}" solving "${brief.problemStatement}", recommend 5 brand keywords from: ${BASE_KEYWORDS.join(', ')}. Return a JSON array of 5 strings.`,
+      true
+    )
+      .then(r => setAiRecs(JSON.parse(r)))
+      .catch(() => {})
+      .finally(() => setLoadingRecs(false));
   }, []);
+
+  const tog = (k: string) => {
+    if (sel.includes(k)) setSel(p => p.filter(s => s !== k));
+    else if (sel.length < 7) setSel(p => [...p, k]);
+  };
+
+  const addCustom = () => {
+    if (!custom || all.includes(custom)) return;
+    setAll(p => [...p, custom]);
+    if (sel.length < 7) setSel(p => [...p, custom]);
+    setCustom('');
+  };
+
+  // ── message helpers ──
+  const generateMessages = async () => {
+    setGeneratingMsgs(true);
+    setPhase('messages');
+    try {
+      const raw = await aiGen(
+        `For brand "${brief.companyName}", write one punchy brand manifesto message per keyword: ${sel.join(', ')}. Bold and specific. Return a JSON array of objects: {keyword, message}.`,
+        true
+      );
+      setMessages(JSON.parse(raw).map((d: { keyword: string; message: string }) => ({
+        ...d, approved: false, alts: [], rating: '' as const,
+      })));
+    } catch {
+      setMessages(sel.map(k => ({ keyword: k, message: `We believe ${k.toLowerCase()} is the foundation of everything we build.`, approved: false, alts: [], rating: '' as const })));
+    } finally {
+      setGeneratingMsgs(false);
+    }
+  };
 
   const getAlts = async (i: number) => {
     try {
-      const raw = await aiGen(`Write 2 alternative brand messages for keyword "${items[i].keyword}". Different from: "${items[i].message}". JSON array of 2 strings.`, true);
-      setItems(p => p.map((m, idx) => idx === i ? { ...m, alts: JSON.parse(raw) } : m));
-    } catch { setItems(p => p.map((m, idx) => idx === i ? { ...m, alts: ['Alternative A', 'Alternative B'] } : m)); }
+      const raw = await aiGen(
+        `Write 2 alternative brand messages for keyword "${messages[i].keyword}". Different from: "${messages[i].message}". JSON array of 2 strings.`,
+        true
+      );
+      setMessages(p => p.map((m, idx) => idx === i ? { ...m, alts: JSON.parse(raw) } : m));
+    } catch {
+      setMessages(p => p.map((m, idx) => idx === i ? { ...m, alts: ['Alternative A', 'Alternative B'] } : m));
+    }
   };
 
-  const rate = (i: number, r: 'up' | 'down') => setItems(p => p.map((m, idx) => idx === i ? { ...m, rating: r, approved: r === 'up' } : m));
-  const useAlt = (i: number, alt: string) => setItems(p => p.map((m, idx) => idx === i ? { ...m, message: alt, alts: [] } : m));
+  const rateMsg = (i: number, r: 'up' | 'down') =>
+    setMessages(p => p.map((m, idx) => idx === i ? { ...m, rating: r, approved: r === 'up' } : m));
+
+  const useAlt = (i: number, alt: string) =>
+    setMessages(p => p.map((m, idx) => idx === i ? { ...m, message: alt, alts: [] } : m));
+
+  const handleDone = () => {
+    onDone({
+      keywords: sel,
+      brandMessages: messages.filter(m => m.approved),
+    });
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <Card title="Brand Messages" icon={MessageSquare}>
-      <div className="space-y-4">
-        {loading ? <div className="flex items-center gap-3 p-4 text-sm text-gray-400"><Loader2 size={18} className="animate-spin text-[#EC008C]" /> Generating messages…</div> : (
-          <>
-            {items.map((m, i) => (
-              <div key={i} className={`p-4 rounded-2xl border-2 transition-all ${m.approved ? 'border-green-200 bg-green-50/30' : 'border-gray-100 bg-white'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#EC008C]">{KW_ICONS[m.keyword] || '•'} {m.keyword}</span>
-                  {m.approved && <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><Check size={10} /> Approved</span>}
-                </div>
-                <p className="text-sm text-gray-700 italic mb-3">"{m.message}"</p>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => rate(i, 'up')} className={`p-1.5 rounded-lg transition-all ${m.rating === 'up' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}><ThumbsUp size={13} /></button>
-                  <button onClick={() => rate(i, 'down')} className={`p-1.5 rounded-lg transition-all ${m.rating === 'down' ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}><ThumbsDown size={13} /></button>
-                  <button onClick={() => getAlts(i)} className="ml-auto text-[11px] font-bold text-[#010C83] hover:underline flex items-center gap-1"><RefreshCw size={11} /> 2 alternatives</button>
-                </div>
-                {m.alts.length > 0 && (
-                  <div className="mt-3 space-y-1.5">
-                    {m.alts.map((a, j) => <button key={j} onClick={() => useAlt(i, a)} className="w-full text-left p-2.5 rounded-lg bg-gray-50 text-xs text-gray-600 hover:bg-[#EC008C]/5 transition-colors border border-gray-100">"{a}"</button>)}
-                  </div>
-                )}
-              </div>
-            ))}
-            <PolarButton disabled={items.filter(m => m.approved).length === 0} onClick={() => onDone(items.filter(m => m.approved))} className="w-full">
-              Approve Messages ({items.filter(m => m.approved).length}) <ArrowRight size={16} />
-            </PolarButton>
-          </>
-        )}
+    <div className="w-full max-w-sm mx-auto space-y-6">
+      <div>
+        <p style={{ ...labelStyle, color: '#EC008C' }}>Brand Voice</p>
+        <h2 className="text-2xl font-black tracking-tight mt-1"
+          style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>
+          Define your keywords
+        </h2>
+        <p className="text-sm mt-1" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>
+          Pick 6–7 brand keywords, then approve messages.
+        </p>
       </div>
-    </Card>
-  );
-}
 
-// ── Value Picker ───────────────────────────────────────────────────────────────
-export function ValuePicker({ brief, onDone }: { brief: BriefData; onDone: (vals: string[]) => void }) {
-  const [sel, setSel] = useState<string[]>([]);
-  const msgs = brief.brandMessages.length > 0 ? brief.brandMessages : brief.keywords.map(k => ({ keyword: k, message: `We believe in ${k.toLowerCase()}.`, approved: true }));
-
-  const tog = (k: string) => { if (sel.includes(k)) setSel(p => p.filter(s => s !== k)); else if (sel.length < 2) setSel(p => [...p, k]); };
-
-  return (
-    <Card title="Pick 2 Core Values" icon={Star}>
-      <div className="space-y-4">
-        <p className="text-sm text-gray-500">Pick the 2 values that will anchor your visual direction.</p>
-        {msgs.slice(0, 8).map((m, i) => (
-          <button key={i} onClick={() => tog(m.keyword)} className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${sel.includes(m.keyword) ? 'border-[#EC008C] bg-[#EC008C]/5' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#EC008C]">{m.keyword}</span>
-              {sel.includes(m.keyword) && <div className="w-5 h-5 rounded-full bg-[#EC008C] flex items-center justify-center"><Check size={11} className="text-white" /></div>}
-            </div>
-            <p className="text-sm text-gray-600 italic mt-1">"{m.message}"</p>
-          </button>
-        ))}
-        <p className="text-[10px] text-gray-400 text-center">{sel.length}/2 selected</p>
-        <PolarButton disabled={sel.length !== 2} onClick={() => onDone(sel)} className="w-full">Set Core Values <ArrowRight size={16} /></PolarButton>
-      </div>
-    </Card>
-  );
-}
-
-// ── Visual Direction ───────────────────────────────────────────────────────────
-const VD_OPTIONS = {
-  shape: [['Organic','Natural, fluid'],['Geometric','Precise, structured'],['Sharp','Angular, bold'],['Rounded','Soft, approachable'],['Abstract','Conceptual'],['Flowing','Continuous, smooth']],
-  color: [['Vibrant','High-energy'],['Muted','Subtle, calm'],['Monochrome','Single-hue'],['Gradient','Dynamic, blending'],['Pastel','Light, airy'],['Neon','Electric, futuristic']],
-  motion: [['Fluid','Graceful'],['Snappy','Quick, precise'],['Static','Still, grounded'],['Dynamic','Active'],['Bouncy','Playful'],['Smooth','Consistent']],
-  style: [['Minimal','Clean, essential'],['Complex','Detailed, layered'],['Retro','Nostalgic'],['Futuristic','Tech, advanced'],['Hand-drawn','Personal'],['Corporate','Formal']],
-};
-
-export function VisualDirectionForm({ step, brief, onDone }: { step: 'v1' | 'v2'; brief: BriefData; onDone: (d: any) => void }) {
-  const valueName = step === 'v1' ? (brief.selectedValues[0] || 'Value 1') : (brief.selectedValues[1] || 'Value 2');
-  const [form, setForm] = useState({ shape: 'Organic', color: 'Vibrant', motion: 'Fluid', style: 'Minimal' });
-  const [imgUploaded, setImgUploaded] = useState(false);
-
-  return (
-    <Card title={`Visual Direction: ${valueName}`} icon={Layers}>
-      <div className="space-y-5">
-        {Object.entries(VD_OPTIONS).map(([key, vals]) => (
-          <div key={key}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">{key}</p>
-            <div className="grid grid-cols-3 gap-2">
-              {vals.map(([name, desc]) => {
-                const sel = form[key as keyof typeof form] === name;
-                return (
-                  <button key={name} onClick={() => setForm(p => ({ ...p, [key]: name }))}
-                    className={`relative p-3 rounded-xl border-2 transition-all text-left ${sel ? 'border-[#EC008C] bg-[#EC008C]/5' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
-                    {sel && <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#EC008C] rounded-full flex items-center justify-center"><Check size={9} className="text-white" /></div>}
-                    <span className={`text-xs font-bold block mb-0.5 ${sel ? 'text-[#EC008C]' : 'text-[#010C83]'}`}>{name}</span>
-                    <span className="text-[10px] text-gray-400">{desc}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        <div onClick={() => setImgUploaded(true)}
-          className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${imgUploaded ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-[#EC008C]/30 hover:bg-[#EC008C]/5'}`}>
-          {imgUploaded ? <p className="text-xs text-green-600 font-bold flex items-center justify-center gap-2"><CheckCircle2 size={14} /> Image uploaded</p> : <><Image size={18} className="mx-auto mb-1 text-gray-300" /><p className="text-xs text-gray-400">Upload reference image (optional)</p></>}
+      {/* Keywords panel */}
+      <div className="bg-white rounded-2xl p-6 space-y-4"
+        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+        <div className="flex items-center justify-between">
+          <p style={labelStyle}>
+            Keywords{' '}
+            <span style={{ ...labelStyle, color: '#EC008C', letterSpacing: 0 }}>
+              {sel.length}/7
+            </span>
+          </p>
+          {loadingRecs && <Loader2 size={13} className="animate-spin" style={{ color: '#EC008C' }} />}
         </div>
-        {step === 'v2' && brief.visualDirection.value1.shape && (
-          <div className="p-4 bg-[#FFF0F8]/50 rounded-xl border border-[#EC008C]/10">
-            <p className="text-[10px] font-bold text-[#EC008C] uppercase tracking-widest mb-3">Combined Preview</p>
-            <div className="grid grid-cols-2 gap-3 text-[11px]">
-              {(['value1', 'value2'] as const).map((v, vi) => {
-                const d = brief.visualDirection[v];
-                return (
-                  <div key={v} className="bg-white rounded-lg p-3 border border-gray-100">
-                    <p className="font-bold text-[#010C83] mb-1">{d.valueName || `Value ${vi + 1}`}</p>
-                    {Object.entries(d).filter(([k]) => k !== 'valueName').map(([k, val]) => <p key={k} className="text-gray-400 capitalize">{k}: {val as string}</p>)}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+
+        <div className="flex flex-wrap gap-2">
+          {all.map(k => {
+            const selected = sel.includes(k);
+            const recommended = aiRecs.includes(k) && !selected;
+            return (
+              <button
+                key={k}
+                onClick={() => tog(k)}
+                className="relative px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  ...(selected
+                    ? { background: 'linear-gradient(135deg, #EC008C, #d4007e)', color: 'white', boxShadow: '0 2px 8px rgba(236,0,140,0.25)' }
+                    : { background: 'white', color: 'rgba(1,12,131,0.55)', border: '1px solid rgba(1,12,131,0.12)' }
+                  ),
+                }}>
+                {k}
+                {recommended && (
+                  <span className="absolute -top-1.5 -right-1 text-[9px] font-black" style={{ color: '#EC008C' }}>✦</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {aiRecs.length > 0 && (
+          <p className="text-[10px]" style={{ color: 'rgba(1,12,131,0.35)', fontFamily: 'var(--font-sans)' }}>
+            <span style={{ color: '#EC008C' }}>✦</span> AI recommended
+          </p>
         )}
-        <PolarButton onClick={() => onDone(form)} className="w-full h-12">Confirm {valueName} Direction <ArrowRight size={16} /></PolarButton>
+
+        <div className="flex gap-2">
+          <input
+            value={custom}
+            onChange={e => setCustom(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addCustom()}
+            placeholder="Add custom keyword…"
+            className="flex-1 rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all"
+            style={{
+              background: 'rgba(1,12,131,0.03)',
+              border: '1px solid rgba(1,12,131,0.12)',
+              color: '#010C83',
+              fontFamily: 'var(--font-sans)',
+            }}
+          />
+          <button
+            onClick={addCustom}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            style={{ background: 'rgba(1,12,131,0.05)', color: '#010C83', fontFamily: 'var(--font-sans)' }}>
+            Add
+          </button>
+        </div>
+
+        {phase === 'keywords' && (
+          <PolarButton
+            disabled={sel.length < 6}
+            onClick={generateMessages}
+            className="w-full h-10 text-sm">
+            Generate Messages <ArrowRight size={14} />
+          </PolarButton>
+        )}
       </div>
-    </Card>
+
+      {/* Messages panel */}
+      {phase === 'messages' && (
+        <div className="bg-white rounded-2xl p-6 space-y-4"
+          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+          <p style={labelStyle}>Brand messages — approve the ones you like</p>
+
+          {generatingMsgs ? (
+            <div className="flex items-center gap-2 py-4 text-sm" style={{ color: '#EC008C', fontFamily: 'var(--font-sans)' }}>
+              <Loader2 size={15} className="animate-spin" /> Generating messages…
+            </div>
+          ) : (
+            <>
+              {messages.map((m, i) => (
+                <div key={i} className="rounded-2xl p-4 transition-all"
+                  style={{
+                    border: m.approved ? '2px solid rgba(16,185,129,0.3)' : '2px solid rgba(1,12,131,0.06)',
+                    background: m.approved ? 'rgba(16,185,129,0.04)' : 'white',
+                  }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#EC008C', fontFamily: 'var(--font-sans)' }}>
+                      {m.keyword}
+                    </span>
+                    {m.approved && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: '#065f46', fontFamily: 'var(--font-sans)' }}>
+                        <Check size={10} /> Approved
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm italic leading-relaxed mb-3" style={{ color: '#374151', fontFamily: 'var(--font-sans)' }}>
+                    "{m.message}"
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => rateMsg(i, 'up')}
+                      className="p-1.5 rounded-lg transition-all cursor-pointer"
+                      style={{
+                        background: m.rating === 'up' ? 'rgba(16,185,129,0.12)' : 'rgba(0,0,0,0.04)',
+                        color: m.rating === 'up' ? '#065f46' : 'rgba(1,12,131,0.35)',
+                      }}>
+                      <ThumbsUp size={13} />
+                    </button>
+                    <button
+                      onClick={() => rateMsg(i, 'down')}
+                      className="p-1.5 rounded-lg transition-all cursor-pointer"
+                      style={{
+                        background: m.rating === 'down' ? 'rgba(239,68,68,0.1)' : 'rgba(0,0,0,0.04)',
+                        color: m.rating === 'down' ? '#dc2626' : 'rgba(1,12,131,0.35)',
+                      }}>
+                      <ThumbsDown size={13} />
+                    </button>
+                    <button
+                      onClick={() => getAlts(i)}
+                      className="ml-auto flex items-center gap-1 text-xs font-bold transition-all cursor-pointer"
+                      style={{ color: '#010C83', fontFamily: 'var(--font-sans)' }}>
+                      <RefreshCw size={11} /> 2 alternatives
+                    </button>
+                  </div>
+                  {m.alts.length > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      {m.alts.map((a, j) => (
+                        <button
+                          key={j}
+                          onClick={() => useAlt(i, a)}
+                          className="w-full text-left rounded-lg px-3 py-2.5 text-xs transition-all cursor-pointer"
+                          style={{
+                            background: 'rgba(1,12,131,0.03)',
+                            border: '1px solid rgba(1,12,131,0.08)',
+                            color: '#374151',
+                            fontFamily: 'var(--font-sans)',
+                          }}>
+                          "{a}"
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <PolarButton
+                disabled={messages.filter(m => m.approved).length === 0}
+                onClick={handleDone}
+                className="w-full h-11 text-sm">
+                Approve Messages ({messages.filter(m => m.approved).length}) <ArrowRight size={14} />
+              </PolarButton>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── BrandValuesDirection ──────────────────────────────────────────────────────
+
+type ValuesDirectionDone = Pick<BriefData, 'selectedValues' | 'visualDirection'>;
+
+export function BrandValuesDirection({ brief, onDone }: { brief: BriefData; onDone: (d: ValuesDirectionDone) => void }) {
+  const keywords = brief.keywords.length ? brief.keywords : BASE_KEYWORDS.slice(0, 8);
+  const msgs = brief.brandMessages;
+
+  const [selVals, setSelVals] = useState<string[]>(brief.selectedValues.length ? brief.selectedValues : []);
+  const [phase, setPhase] = useState<'pick' | 'mood1' | 'mood2'>('pick');
+  const [mood1, setMood1] = useState<BriefData['visualLanguageMood']>(
+    brief.visualDirection.value1.moodLiked.length
+      ? { liked: brief.visualDirection.value1.moodLiked, skipped: brief.visualDirection.value1.moodSkipped }
+      : { liked: [], skipped: [] }
+  );
+  const [mood2, setMood2] = useState<BriefData['visualLanguageMood']>(
+    brief.visualDirection.value2.moodLiked.length
+      ? { liked: brief.visualDirection.value2.moodLiked, skipped: brief.visualDirection.value2.moodSkipped }
+      : { liked: [], skipped: [] }
+  );
+
+  const togVal = (k: string) => {
+    if (selVals.includes(k)) setSelVals(p => p.filter(s => s !== k));
+    else if (selVals.length < 2) setSelVals(p => [...p, k]);
+  };
+
+  const handleDone = () => {
+    onDone({
+      selectedValues: selVals,
+      visualDirection: {
+        value1: { valueName: selVals[0] || '', moodLiked: mood1.liked, moodSkipped: mood1.skipped },
+        value2: { valueName: selVals[1] || '', moodLiked: mood2.liked, moodSkipped: mood2.skipped },
+      },
+    });
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="w-full max-w-sm mx-auto space-y-6">
+      <div>
+        <p style={{ ...labelStyle, color: '#EC008C' }}>Brand Values</p>
+        <h2 className="text-2xl font-black tracking-tight mt-1"
+          style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>
+          {phase === 'pick' ? 'Pick 2 core values' : phase === 'mood1' ? `Visual direction: ${selVals[0]}` : `Visual direction: ${selVals[1]}`}
+        </h2>
+        <p className="text-sm mt-1" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>
+          {phase === 'pick'
+            ? 'These will anchor your visual direction.'
+            : 'Like images that feel right for this value.'}
+        </p>
+      </div>
+
+      {/* Phase: pick values */}
+      {phase === 'pick' && (
+        <div className="bg-white rounded-2xl p-6 space-y-3"
+          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+          {keywords.slice(0, 10).map(k => {
+            const msg = msgs.find(m => m.keyword === k);
+            const selected = selVals.includes(k);
+            return (
+              <button
+                key={k}
+                onClick={() => togVal(k)}
+                className="w-full text-left rounded-2xl p-4 transition-all cursor-pointer"
+                style={{
+                  border: selected ? '2px solid #EC008C' : '2px solid rgba(1,12,131,0.06)',
+                  background: selected ? 'rgba(236,0,140,0.04)' : 'white',
+                }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-widest" style={{ color: '#EC008C', fontFamily: 'var(--font-sans)' }}>
+                    {k}
+                  </span>
+                  {selected && (
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#EC008C' }}>
+                      <Check size={11} className="text-white" />
+                    </div>
+                  )}
+                </div>
+                {msg && (
+                  <p className="text-xs italic mt-1.5 leading-relaxed" style={{ color: 'rgba(55,65,81,0.75)', fontFamily: 'var(--font-sans)' }}>
+                    "{msg.message}"
+                  </p>
+                )}
+              </button>
+            );
+          })}
+          <p className="text-center text-xs" style={{ color: 'rgba(1,12,131,0.35)', fontFamily: 'var(--font-sans)' }}>
+            {selVals.length}/2 selected
+          </p>
+          <PolarButton
+            disabled={selVals.length !== 2}
+            onClick={() => setPhase('mood1')}
+            className="w-full h-11 text-sm">
+            Set Visual Direction <ArrowRight size={14} />
+          </PolarButton>
+        </div>
+      )}
+
+      {/* Phase: mood for value 1 */}
+      {phase === 'mood1' && (
+        <div className="bg-white rounded-2xl p-6 space-y-4"
+          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+          <p className="text-xs" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>
+            Like images that feel right for "{selVals[0]}" · skip ones that don't
+          </p>
+          <MoodBoard
+            categories={[selVals[0].toLowerCase(), 'brand', 'design', 'identity']}
+            value={mood1}
+            onChange={setMood1}
+          />
+          <PolarButton
+            onClick={() => setPhase('mood2')}
+            className="w-full h-11 text-sm">
+            Next: {selVals[1]} <ArrowRight size={14} />
+          </PolarButton>
+        </div>
+      )}
+
+      {/* Phase: mood for value 2 */}
+      {phase === 'mood2' && (
+        <div className="bg-white rounded-2xl p-6 space-y-4"
+          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+          <p className="text-xs" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>
+            Like images that feel right for "{selVals[1]}" · skip ones that don't
+          </p>
+          <MoodBoard
+            categories={[selVals[1].toLowerCase(), 'brand', 'design', 'identity']}
+            value={mood2}
+            onChange={setMood2}
+          />
+          <PolarButton
+            onClick={handleDone}
+            className="w-full h-11 text-sm">
+            Save & Continue <ArrowRight size={14} />
+          </PolarButton>
+        </div>
+      )}
+    </div>
   );
 }
