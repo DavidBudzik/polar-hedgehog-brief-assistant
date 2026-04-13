@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { GoogleGenAI, ThinkingLevel, GenerateContentResponse } from "@google/genai";
-import { Bot, Send, Upload, Sparkles, Loader2, X } from 'lucide-react';
+import { Send, Upload, Sparkles, Loader2, X, AlertCircle, RefreshCw } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { getStoredApiKey } from './shared';
 
@@ -22,8 +22,9 @@ export const GeminiAssistant = ({ isOpen, onClose }: { isOpen: boolean; onClose:
       const contents: any = { parts: [{ text: message }] };
       if (imagePart) contents.parts.push(imagePart);
 
-      const modelName = model === 'fast' ? 'gemini-3.1-flash-lite-preview' : 
-                        model === 'general' ? 'gemini-3-flash-preview' : 'gemini-3.1-pro-preview';
+      const modelName = model === 'fast'    ? 'gemini-2.0-flash-lite'
+                      : model === 'general' ? 'gemini-2.0-flash'
+                      :                        'gemini-2.5-pro';
 
       const response: GenerateContentResponse = await ai.models.generateContent({
         model: modelName,
@@ -36,10 +37,23 @@ export const GeminiAssistant = ({ isOpen, onClose }: { isOpen: boolean; onClose:
       setMessages(prev => [...prev, { role: 'model', content: response.text || '' }]);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: 'Sorry, I encountered an error.' }]);
+      const detail = error instanceof Error ? error.message : String(error);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        content: `__error__:${detail}`,
+      }]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const retryLast = () => {
+    // Find the last user message and resend it, dropping any trailing error reply.
+    const lastUserIdx = [...messages].map(m => m.role).lastIndexOf('user');
+    if (lastUserIdx < 0) return;
+    const lastUser = messages[lastUserIdx];
+    setMessages(prev => prev.slice(0, lastUserIdx));
+    sendMessage(lastUser.content);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,17 +111,51 @@ export const GeminiAssistant = ({ isOpen, onClose }: { isOpen: boolean; onClose:
             <p className="text-xs mt-1" style={{ color: 'rgba(1,12,131,0.45)', fontFamily: 'var(--font-sans)' }}>About your brand, brief, or strategy.</p>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`p-3 rounded-xl text-sm ${m.role === 'user' ? 'ml-6' : 'mr-6'}`}
-            style={{
-              background: m.role === 'user' ? '#010C83' : 'white',
-              color: m.role === 'user' ? 'white' : '#010C83',
-              border: m.role === 'model' ? '1px solid rgba(1,12,131,0.08)' : 'none',
-              fontFamily: 'var(--font-sans)',
-            }}>
-            <Markdown>{m.content}</Markdown>
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          const isError = m.role === 'model' && m.content.startsWith('__error__:');
+          const isLastMessage = i === messages.length - 1;
+          if (isError) {
+            const detail = m.content.slice('__error__:'.length);
+            return (
+              <div key={i} className="mr-6 p-3 rounded-xl text-sm"
+                style={{
+                  background: 'rgba(239,68,68,0.06)',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  fontFamily: 'var(--font-sans)',
+                }}>
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={13} style={{ color: '#dc2626', flexShrink: 0, marginTop: 2 }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: '#dc2626' }}>
+                      Request failed
+                    </p>
+                    <p className="text-xs leading-relaxed break-words" style={{ color: 'rgba(1,12,131,0.75)' }}>
+                      {detail}
+                    </p>
+                    {isLastMessage && (
+                      <button onClick={retryLast}
+                        className="mt-2 inline-flex items-center gap-1 text-xs font-bold cursor-pointer hover:underline"
+                        style={{ color: '#EC008C' }}>
+                        <RefreshCw size={11} /> Retry
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={i} className={`p-3 rounded-xl text-sm ${m.role === 'user' ? 'ml-6' : 'mr-6'}`}
+              style={{
+                background: m.role === 'user' ? '#010C83' : 'white',
+                color: m.role === 'user' ? 'white' : '#010C83',
+                border: m.role === 'model' ? '1px solid rgba(1,12,131,0.08)' : 'none',
+                fontFamily: 'var(--font-sans)',
+              }}>
+              <Markdown>{m.content}</Markdown>
+            </div>
+          );
+        })}
         {isLoading && (
           <div className="flex items-center gap-2 mr-6">
             <div className="p-3 rounded-xl" style={{ background: 'white', border: '1px solid rgba(1,12,131,0.08)' }}>

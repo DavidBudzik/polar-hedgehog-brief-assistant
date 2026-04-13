@@ -167,7 +167,9 @@ export async function aiAnalyzeDocument(file: File, prompt: string): Promise<str
   }
 
   if (fileState.state !== 'ACTIVE') {
-    throw new Error('File processing failed or timed out');
+    throw new Error(
+      `File processing did not complete (state: ${fileState.state ?? 'unknown'} after ${attempts} polls of ${file.name}).`
+    );
   }
 
   const res = await ai.models.generateContent({

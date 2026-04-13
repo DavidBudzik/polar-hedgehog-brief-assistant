@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Check, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { PolarButton, aiGen } from '../shared';
 import { MoodBoard } from '../components/MoodBoard';
+import { ErrorBanner } from '../ui/useAIError';
 import type { BriefData } from '../types';
 
 const BASE_KEYWORDS = [
@@ -36,6 +37,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
   const [messages, setMessages] = useState<Msg[]>([]);
   const [generatingMsgs, setGeneratingMsgs] = useState(false);
   const [phase, setPhase] = useState<'keywords' | 'messages'>('keywords');
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // ── keyword helpers ──
   useEffect(() => {
@@ -46,7 +48,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
       true
     )
       .then(r => setAiRecs(JSON.parse(r)))
-      .catch(() => {})
+      .catch(e => setAiError(`Couldn't load keyword recommendations: ${e instanceof Error ? e.message : String(e)}`))
       .finally(() => setLoadingRecs(false));
   }, []);
 
@@ -65,6 +67,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
   // ── message helpers ──
   const generateMessages = async () => {
     setGeneratingMsgs(true);
+    setAiError(null);
     setPhase('messages');
     try {
       const raw = await aiGen(
@@ -74,7 +77,8 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
       setMessages(JSON.parse(raw).map((d: { keyword: string; message: string }) => ({
         ...d, approved: false, alts: [], rating: '' as const,
       })));
-    } catch {
+    } catch (e) {
+      setAiError(`Couldn't generate messages: ${e instanceof Error ? e.message : String(e)}. Showing placeholders you can edit.`);
       setMessages(sel.map(k => ({ keyword: k, message: `We believe ${k.toLowerCase()} is the foundation of everything we build.`, approved: false, alts: [], rating: '' as const })));
     } finally {
       setGeneratingMsgs(false);
@@ -82,14 +86,15 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
   };
 
   const getAlts = async (i: number) => {
+    setAiError(null);
     try {
       const raw = await aiGen(
         `Write 2 alternative brand messages for keyword "${messages[i].keyword}". Different from: "${messages[i].message}". JSON array of 2 strings.`,
         true
       );
       setMessages(p => p.map((m, idx) => idx === i ? { ...m, alts: JSON.parse(raw) } : m));
-    } catch {
-      setMessages(p => p.map((m, idx) => idx === i ? { ...m, alts: ['Alternative A', 'Alternative B'] } : m));
+    } catch (e) {
+      setAiError(`Couldn't generate alternatives: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -120,6 +125,14 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
           Pick 6–7 brand keywords, then approve messages.
         </p>
       </div>
+
+      {aiError && (
+        <ErrorBanner
+          message={aiError}
+          onRetry={phase === 'messages' ? generateMessages : undefined}
+          onDismiss={() => setAiError(null)}
+        />
+      )}
 
       {/* Keywords panel */}
       <div className="bg-white rounded-2xl p-6 space-y-4"
