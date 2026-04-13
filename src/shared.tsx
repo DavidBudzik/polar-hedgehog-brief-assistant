@@ -74,7 +74,7 @@ export function Card({ children, title, icon: Icon }: { children: React.ReactNod
 export const STORAGE_KEY = 'polar_gemini_api_key';
 
 export function getStoredApiKey(): string {
-  return localStorage.getItem(STORAGE_KEY) || process.env.GEMINI_API_KEY || '';
+  return localStorage.getItem(STORAGE_KEY) || import.meta.env.VITE_GEMINI_API_KEY || '';
 }
 
 // ── Core AI helper ─────────────────────────────────────────────────────────────
@@ -94,35 +94,25 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
   return res.text || '';
 }
 
-// ── URL scanning via Jina Reader Proxy ───────────────────────────────────────
-// Uses r.jina.ai to cleanly extract website text, bypassing CORS and model limitations
+// ── URL scanning via Gemini urlContext tool ───────────────────────────────────
+// Gemini fetches the URL server-side — no CORS issues in the browser.
 export async function aiScanUrl(url: string, prompt: string): Promise<string> {
-  let websiteText = '';
-  let fetchFailed = false;
+  const ai = getAI();
+  const apiKey = getStoredApiKey();
+  console.log('[aiScanUrl] key present:', !!apiKey, 'url:', url);
+  const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
   try {
-    const response = await fetch(`https://r.jina.ai/${url}`);
-    if (response.ok) {
-      websiteText = await response.text();
-    } else {
-      console.warn('Failed to fetch website from Jina:', response.status);
-      fetchFailed = true;
-    }
+    const res = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{ role: 'user', parts: [{ text: `${normalizedUrl}\n\n${prompt}` }] }],
+      config: { tools: [{ urlContext: {} }] },
+    });
+    console.log('[aiScanUrl] success, text length:', res.text?.length);
+    return res.text?.trim() || '';
   } catch (err) {
-    console.error('Error fetching via Jina:', err);
-    fetchFailed = true;
+    console.error('[aiScanUrl] error:', err);
+    throw err;
   }
-
-  // If Jina failed or returned barely anything, fallback to just asking the model to guess based on the URL name
-  if (fetchFailed || websiteText.length < 50) {
-    const fallbackResponse = await aiGen(`${prompt}\n\nNote: I could not scrape the website. Please generate your best response based on the company's URL: ${url}`);
-    return fallbackResponse || '(AI was unable to generate a response for this website)';
-  }
-
-  // Pass the extracted text into the standard generation prompt.
-  // We place the large context FIRST and the instruction LAST so the LLM doesn't lose the instruction context.
-  const finalResponse = await aiGen(`Here is the scraped markdown content of the website (${url}):\n\n<website_content>\n${websiteText.substring(0, 50000)}\n</website_content>\n\nBased on the website content above, please follow this instruction explicitly:\n${prompt}`);
-  
-  return finalResponse || '(AI returned an empty response. Try refreshing or typing manually.)';
 }
 // ── Image analysis (logo, brand assets) ───────────────────────────────────────
 // Converts a File to base64 and sends it as inline data to Gemini vision.
