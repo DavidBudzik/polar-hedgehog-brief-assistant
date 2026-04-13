@@ -1,10 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CheckCircle2, Sparkles } from 'lucide-react';
 import { GeminiAssistant } from './GeminiAssistant';
 import { SettingsButton } from './Settings';
-import { INITIAL_BRIEF, STEPS_ORDER } from './types';
+import { BRIEF_STORAGE_KEY, INITIAL_BRIEF, STEPS_ORDER } from './types';
 import type { BriefData, BriefStep } from './types';
+
+// ── Brief persistence ──────────────────────────────────────────────────────────
+
+type PersistedBrief = { brief: BriefData; step: BriefStep; completed: BriefStep[] };
+
+function loadPersisted(): PersistedBrief | null {
+  try {
+    const raw = localStorage.getItem(BRIEF_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedBrief;
+    // Guard against orphaned step IDs after a shape change.
+    if (!STEPS_ORDER.includes(parsed.step)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 // Steps
 import { CompanySetup } from './steps/Setup';
@@ -166,11 +183,33 @@ function SubmittedScreen({ brief }: { brief: BriefData }) {
 }
 
 export default function App() {
-  const [brief, setBrief] = useState<BriefData>(INITIAL_BRIEF);
-  const [step, setStep] = useState<BriefStep>('setup');
-  const [completed, setCompleted] = useState<Set<BriefStep>>(new Set());
+  const [brief, setBrief] = useState<BriefData>(() => loadPersisted()?.brief ?? INITIAL_BRIEF);
+  const [step, setStep] = useState<BriefStep>(() => loadPersisted()?.step ?? 'setup');
+  const [completed, setCompleted] = useState<Set<BriefStep>>(
+    () => new Set(loadPersisted()?.completed ?? [])
+  );
   const [submitted, setSubmitted] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+
+  // Persist brief progress on every change. Set is serialized as an array.
+  useEffect(() => {
+    if (submitted) return;
+    try {
+      localStorage.setItem(
+        BRIEF_STORAGE_KEY,
+        JSON.stringify({ brief, step, completed: [...completed] } satisfies PersistedBrief)
+      );
+    } catch {
+      // localStorage quota or disabled — non-fatal, skip persistence.
+    }
+  }, [brief, step, completed, submitted]);
+
+  // Clear persisted state once the brief is submitted so a reload starts fresh.
+  useEffect(() => {
+    if (submitted) {
+      try { localStorage.removeItem(BRIEF_STORAGE_KEY); } catch { /* noop */ }
+    }
+  }, [submitted]);
 
   const markDone = (s: BriefStep) => setCompleted(p => new Set([...p, s]));
   const next = (s: BriefStep) => {

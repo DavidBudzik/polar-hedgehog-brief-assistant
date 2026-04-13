@@ -71,6 +71,10 @@ export type BriefStep =
   | 'visual_references'
   | 'summary';
 
+// Versioned key for persisting brief progress in localStorage.
+// Bump the version suffix if BriefData shape changes in a non-backwards-compatible way.
+export const BRIEF_STORAGE_KEY = 'polar_brief_state_v1';
+
 export const STEPS_ORDER: BriefStep[] = [
   'setup',
   'problem_solution',

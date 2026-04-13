@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Target, Search, Upload, RefreshCw, Loader2, ArrowRight, Plus, Trash2, Flame, Zap, Sparkles, FileText } from 'lucide-react';
 import { PolarButton, Card, aiGen, aiScanUrl, aiAnalyzeFile } from '../shared';
 import { ScreenshotCard } from '../components/ScreenshotCard';
+import { ErrorBanner } from '../ui/useAIError';
 import type { BriefData } from '../types';
 
 // ── Problem + Solution (merged) ───────────────────────────────────────────────
@@ -21,6 +22,7 @@ export function ProblemSolution({
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export function ProblemSolution({
   const generateFromUrl = async (targetUrl: string) => {
     setLoading(true);
     setLoadingMsg('Scanning website…');
+    setScanError(null);
     setMode('review');
     try {
       const [p, s] = await Promise.all([
@@ -41,15 +44,17 @@ export function ProblemSolution({
       ]);
       setProblem(p.trim());
       setSolution(s.trim());
-    } catch {
-      setProblem(`${brief.companyName} solves the challenge of [describe your problem].`);
-      setSolution(`${brief.companyName} solves this by [describe your solution].`);
+    } catch (e) {
+      setScanError(e instanceof Error ? e.message : String(e));
+      if (!problem) setProblem(`${brief.companyName} solves the challenge of [describe your problem].`);
+      if (!solution) setSolution(`${brief.companyName} solves this by [describe your solution].`);
     } finally { setLoading(false); setLoadingMsg(''); }
   };
 
   const generateFromFile = async (file: File) => {
     setLoading(true);
     setLoadingMsg('Reading document…');
+    setScanError(null);
     setMode('review');
     try {
       const [p, s] = await Promise.all([
@@ -58,10 +63,16 @@ export function ProblemSolution({
       ]);
       setProblem(p.trim());
       setSolution(s.trim());
-    } catch {
-      setProblem(`${brief.companyName} solves the challenge of [describe your problem].`);
-      setSolution(`${brief.companyName} solves this by [describe your solution].`);
+    } catch (e) {
+      setScanError(e instanceof Error ? e.message : String(e));
+      if (!problem) setProblem(`${brief.companyName} solves the challenge of [describe your problem].`);
+      if (!solution) setSolution(`${brief.companyName} solves this by [describe your solution].`);
     } finally { setLoading(false); setLoadingMsg(''); }
+  };
+
+  const retryScan = () => {
+    if (uploadedFile) generateFromFile(uploadedFile);
+    else if (url) generateFromUrl(url);
   };
 
   const getAlts = async (which: 'problem' | 'solution') => {
@@ -162,6 +173,13 @@ export function ProblemSolution({
           </div>
         ) : (
           <>
+            {scanError && (
+              <ErrorBanner
+                message={`Couldn't analyze source: ${scanError}. Showing a template you can edit, or retry.`}
+                onRetry={retryScan}
+                onDismiss={() => setScanError(null)}
+              />
+            )}
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)', letterSpacing: '0.12em' }}>
                 Problem Statement

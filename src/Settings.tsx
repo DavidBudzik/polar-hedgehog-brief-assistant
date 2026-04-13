@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, X, Key, Eye, EyeOff, Check, ExternalLink, AlertCircle } from 'lucide-react';
+import { Settings, X, Key, Eye, EyeOff, Check, ExternalLink, AlertCircle, Trash2 } from 'lucide-react';
 import { STORAGE_KEY, getStoredApiKey } from './shared';
+import { BRIEF_STORAGE_KEY } from './types';
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
   const [apiKey, setApiKey] = useState('');
   const [show, setShow] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   useEffect(() => {
     setApiKey(getStoredApiKey());
@@ -22,8 +24,14 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
     setTimeout(() => { setSaved(false); onClose(); }, 1000);
   };
 
-  const isEnvKey = !localStorage.getItem(STORAGE_KEY) && !!process.env.GEMINI_API_KEY;
+  const resetBrief = () => {
+    try { localStorage.removeItem(BRIEF_STORAGE_KEY); } catch { /* noop */ }
+    window.location.reload();
+  };
+
+  const isEnvKey = !localStorage.getItem(STORAGE_KEY) && !!import.meta.env.VITE_GEMINI_API_KEY;
   const hasKey = !!apiKey.trim();
+  const hasBrief = !!localStorage.getItem(BRIEF_STORAGE_KEY);
 
   return (
     <motion.div
@@ -114,6 +122,43 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
             Your key is stored only in your browser's local storage — it never leaves your device.
           </p>
         </div>
+
+        {hasBrief && (
+          <>
+            <div className="h-px bg-gray-100" />
+            <div className="space-y-2">
+              <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                <Trash2 size={10} /> Brief Progress
+              </label>
+              {confirmReset ? (
+                <div className="flex items-center gap-2">
+                  <p className="flex-1 text-[11px] text-gray-600">
+                    Delete all saved answers and start over?
+                  </p>
+                  <button
+                    onClick={() => setConfirmReset(false)}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={resetBrief}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-red-500 text-white hover:bg-red-600 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmReset(true)}
+                  className="w-full text-left px-3 py-2.5 rounded-xl text-[11px] text-gray-500 border border-gray-200 hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+                >
+                  Reset brief — clears all answers saved in this browser.
+                </button>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 pt-1">
