@@ -7,25 +7,26 @@ export interface BriefData {
   problemStatement: string;
   solutionDescription: string;
   competitors: Array<{ name: string; url: string; tagline: string; tags: string[]; tagCategory: 'similar' | 'different' }>;
+  competitorScreenshots: Record<string, string>;
   uvp: string[];
   features: Array<{ title: string; desc: string }>;
   companyNameMeaning: string;
   logoRationale: string;
   logoRationaleChips: string[];
-  visualLanguageRationale: string;
-  visualLanguageSliders: { modern: number; trustworthy: number; bold: number };
+  visualLanguageMood: { liked: string[]; skipped: string[] };
   keywords: string[];
+  keywordImages: Record<string, string>;
   brandMessages: Array<{ keyword: string; message: string; approved: boolean }>;
   selectedValues: string[];
   visualDirection: {
-    value1: { valueName: string; shape: string; color: string; motion: string; style: string };
-    value2: { valueName: string; shape: string; color: string; motion: string; style: string };
+    value1: { valueName: string; moodLiked: string[]; moodSkipped: string[] };
+    value2: { valueName: string; moodLiked: string[]; moodSkipped: string[] };
   };
   referenceBrands: Array<{ name: string; url: string; likes: string[]; dislikes: string[] }>;
+  referenceScreenshots: Record<string, string>;
   logoStyle: string;
   logoOpenToRecommendations: boolean;
-  colorPaletteApproach: string;
-  colorSwatchRatings: Array<{ color: string; label: string; rating: 'like' | 'dislike' | '' }>;
+  colorPaletteRatings: Array<{ paletteName: string; swatches: string[]; rating: 'like' | 'skip' | '' }>;
 }
 
 export const INITIAL_BRIEF: BriefData = {
@@ -37,44 +38,47 @@ export const INITIAL_BRIEF: BriefData = {
   problemStatement: '',
   solutionDescription: '',
   competitors: [],
+  competitorScreenshots: {},
   uvp: [],
   features: [],
   companyNameMeaning: '',
   logoRationale: '',
   logoRationaleChips: [],
-  visualLanguageRationale: '',
-  visualLanguageSliders: { modern: 3, trustworthy: 3, bold: 3 },
+  visualLanguageMood: { liked: [], skipped: [] },
   keywords: [],
+  keywordImages: {},
   brandMessages: [],
   selectedValues: [],
   visualDirection: {
-    value1: { valueName: '', shape: 'Organic', color: 'Vibrant', motion: 'Fluid', style: 'Minimal' },
-    value2: { valueName: '', shape: 'Geometric', color: 'Muted', motion: 'Snappy', style: 'Futuristic' },
+    value1: { valueName: '', moodLiked: [], moodSkipped: [] },
+    value2: { valueName: '', moodLiked: [], moodSkipped: [] },
   },
   referenceBrands: [],
+  referenceScreenshots: {},
   logoStyle: '',
   logoOpenToRecommendations: false,
-  colorPaletteApproach: '',
-  colorSwatchRatings: [],
+  colorPaletteRatings: [],
 };
 
 export type BriefStep =
-  | 'setup' | 'kickoff'
-  | 'problem_statement' | 'solution_description'
-  | 'competitors' | 'uvp' | 'features'
-  | 'company_name_meaning' | 'logo_rationale' | 'visual_language_rationale'
-  | 'keywords' | 'brand_messages' | 'value_picker'
-  | 'visual_direction_v1' | 'visual_direction_v2'
-  | 'reference_brands' | 'logo_style' | 'color_palette'
+  | 'setup'
+  | 'problem_solution'
+  | 'market_position'
+  | 'product'
+  | 'brand_audit'
+  | 'brand_voice'
+  | 'brand_values_direction'
+  | 'visual_references'
   | 'summary';
 
 export const STEPS_ORDER: BriefStep[] = [
-  'setup', 'kickoff',
-  'problem_statement', 'solution_description',
-  'competitors', 'uvp', 'features',
-  'company_name_meaning', 'logo_rationale', 'visual_language_rationale',
-  'keywords', 'brand_messages', 'value_picker',
-  'visual_direction_v1', 'visual_direction_v2',
-  'reference_brands', 'logo_style', 'color_palette',
+  'setup',
+  'problem_solution',
+  'market_position',
+  'product',
+  'brand_audit',
+  'brand_voice',
+  'brand_values_direction',
+  'visual_references',
   'summary',
 ];
