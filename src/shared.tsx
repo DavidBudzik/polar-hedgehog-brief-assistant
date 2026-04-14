@@ -102,7 +102,7 @@ export function extractJson(text: string): any {
 export async function aiGen(prompt: string, json = false): Promise<string> {
   const ai = getAI();
   const config: Record<string, unknown> = json ? { responseMimeType: 'application/json' } : {};
-  const model = globalModelOverride || 'gemini-2.0-flash';
+  const model = globalModelOverride || 'gemini-2.5-flash';
   
   try {
     const res = await ai.models.generateContent({
@@ -112,10 +112,17 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
     });
     return res.text || '';
   } catch (err: any) {
-    if ((err.status === 429 || err.status === 404) && !globalModelOverride) {
-      console.warn(`[aiGen] fallback from ${model} due to ${err.status}`);
-      globalModelOverride = 'gemini-flash-latest';
-      return aiGen(prompt, json);
+    // If 429 or 404, try to downgrade to older/stable models
+    if ((err.status === 429 || err.status === 404)) {
+      if (!globalModelOverride || globalModelOverride === 'gemini-2.5-flash') {
+        console.warn(`[aiGen] falling back from ${model} to gemini-2.0-flash`);
+        globalModelOverride = 'gemini-2.0-flash';
+        return aiGen(prompt, json);
+      } else if (globalModelOverride === 'gemini-2.0-flash') {
+        console.warn(`[aiGen] falling back from ${model} to gemini-flash-lite-latest`);
+        globalModelOverride = 'gemini-flash-lite-latest';
+        return aiGen(prompt, json);
+      }
     }
     throw err;
   }
@@ -125,7 +132,7 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
 export async function aiScanUrl(url: string, prompt: string, json = false): Promise<string> {
   const ai = getAI();
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
-  const model = globalModelOverride || 'gemini-2.0-flash';
+  const model = globalModelOverride || 'gemini-2.5-flash';
   const config: Record<string, unknown> = json ? { responseMimeType: 'application/json' } : {};
   
   console.log('[aiScanUrl] scanning:', normalizedUrl, 'via', model);
@@ -144,12 +151,16 @@ export async function aiScanUrl(url: string, prompt: string, json = false): Prom
     
     return res.text?.trim() || '';
   } catch (err: any) {
-    if ((err.status === 429 || err.status === 404) && !globalModelOverride) {
-      globalModelOverride = 'gemini-flash-latest';
-      return aiScanUrl(url, prompt, json);
+    if ((err.status === 429 || err.status === 404)) {
+      if (!globalModelOverride || globalModelOverride === 'gemini-2.5-flash') {
+        globalModelOverride = 'gemini-2.0-flash';
+        return aiScanUrl(url, prompt, json);
+      } else if (globalModelOverride === 'gemini-2.0-flash') {
+        globalModelOverride = 'gemini-flash-lite-latest';
+        return aiScanUrl(url, prompt, json);
+      }
     }
     console.error('[aiScanUrl] failed:', err);
-    // Final fallback: no tools, just prompt
     return aiGen(`Based on the website ${normalizedUrl}, ${prompt}`, json);
   }
 }
@@ -171,17 +182,32 @@ export function fileToBase64(file: File): Promise<string> {
 export async function aiAnalyzeImage(file: File, prompt: string): Promise<string> {
   const ai = getAI();
   const base64 = await fileToBase64(file);
-  const res = await ai.models.generateContent({
-    model: 'gemini-flash-latest',
-    contents: [{
-      role: 'user',
-      parts: [
-        { inlineData: { data: base64, mimeType: file.type } },
-        { text: prompt },
-      ],
-    }],
-  });
-  return res.text || '';
+  const model = globalModelOverride || 'gemini-2.5-flash';
+  
+  try {
+    const res = await ai.models.generateContent({
+      model,
+      contents: [{
+        role: 'user',
+        parts: [
+          { inlineData: { data: base64, mimeType: file.type } },
+          { text: prompt },
+        ],
+      }],
+    });
+    return res.text || '';
+  } catch (err: any) {
+    if ((err.status === 429 || err.status === 404)) {
+      if (!globalModelOverride || globalModelOverride === 'gemini-2.5-flash') {
+        globalModelOverride = 'gemini-2.0-flash';
+        return aiAnalyzeImage(file, prompt);
+      } else if (globalModelOverride === 'gemini-2.0-flash') {
+        globalModelOverride = 'gemini-flash-lite-latest';
+        return aiAnalyzeImage(file, prompt);
+      }
+    }
+    throw err;
+  }
 }
 
 // ── Document analysis (PDF, PPTX, DOCX) ───────────────────────────────────────
@@ -213,17 +239,31 @@ export async function aiAnalyzeDocument(file: File, prompt: string): Promise<str
     );
   }
 
-  const res = await ai.models.generateContent({
-    model: 'gemini-flash-latest',
-    contents: [{
-      role: 'user',
-      parts: [
-        { fileData: { fileUri: fileState.uri!, mimeType: file.type } },
-        { text: prompt },
-      ],
-    }],
-  });
-  return res.text || '';
+  const model = globalModelOverride || 'gemini-2.5-flash';
+  try {
+    const res = await ai.models.generateContent({
+      model,
+      contents: [{
+        role: 'user',
+        parts: [
+          { fileData: { fileUri: fileState.uri!, mimeType: file.type } },
+          { text: prompt },
+        ],
+      }],
+    });
+    return res.text || '';
+  } catch (err: any) {
+    if ((err.status === 429 || err.status === 404)) {
+      if (!globalModelOverride || globalModelOverride === 'gemini-2.5-flash') {
+        globalModelOverride = 'gemini-2.0-flash';
+        return aiAnalyzeDocument(file, prompt);
+      } else if (globalModelOverride === 'gemini-2.0-flash') {
+        globalModelOverride = 'gemini-flash-lite-latest';
+        return aiAnalyzeDocument(file, prompt);
+      }
+    }
+    throw err;
+  }
 }
 
 // ── Smart file router ──────────────────────────────────────────────────────────

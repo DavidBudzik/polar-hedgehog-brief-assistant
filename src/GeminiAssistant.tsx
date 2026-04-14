@@ -23,9 +23,9 @@ export const GeminiAssistant = ({ isOpen, onClose }: { isOpen: boolean; onClose:
       if (imagePart) parts.push(imagePart);
       const contents = [{ role: 'user', parts }];
 
-      const modelName = model === 'fast'    ? 'gemini-flash-lite-latest'
-                      : model === 'general' ? 'gemini-flash-latest'
-                      :                        'gemini-pro-latest';
+      const modelName = model === 'fast'    ? 'gemini-2.5-flash-lite'
+                      : model === 'general' ? 'gemini-2.5-flash'
+                      :                        'gemini-2.5-pro';
 
       const response: GenerateContentResponse = await ai.models.generateContent({
         model: modelName,
