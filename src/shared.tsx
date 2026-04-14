@@ -97,60 +97,34 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
   return res.text || '';
 }
 
-// ── URL scanning via Jina Reader + Gemini ───────────────────────────────────
-// We use r.jina.ai to convert the URL to clean markdown, then pass it to Gemini.
+// ── URL scanning via Gemini Native Browsing ──────────────────────────────────
+// Instead of a client-side fetch to Jina (which fails CORS in prod), 
+// we use the Gemini model's built-in Search tool to "visit" the URL.
 export async function aiScanUrl(url: string, prompt: string): Promise<string> {
   const ai = getAI();
   const apiKey = getStoredApiKey();
-  console.log('[aiScanUrl] key present:', !!apiKey, 'url:', url);
+  console.log('[aiScanUrl] native browsing for:', url);
   
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
   
   try {
-    // 1. Fetch markdown from Jina (using local proxy in dev to bypass CORS)
-    const isDev = import.meta.env.DEV;
-    const jinaBase = isDev ? '/jina-proxy' : 'https://r.jina.ai';
-    
-    // In dev, the rewrite logic in vite.config.ts will handle stripping /jina-proxy
-    // We want the final URL to be https://r.jina.ai/https://example.com
-    const jinaUrl = isDev 
-      ? `${jinaBase}/${normalizedUrl}` 
-      : `${jinaBase}/${normalizedUrl}`;
-    
-    console.log('[aiScanUrl] fetching from Jina:', jinaUrl);
-    const jinaRes = await fetch(jinaUrl, {
-      headers: {
-        'Accept': 'text/plain',
-        'X-No-Cache': 'true'
-      }
-    });
-    
-    if (!jinaRes.ok) {
-      const errorText = await jinaRes.text().catch(() => 'no error body');
-      console.error('[aiScanUrl] Jina failed:', jinaRes.status, jinaRes.statusText, errorText);
-      throw new Error(`Jina failed to fetch site: ${jinaRes.statusText} (${jinaRes.status})`);
-    }
-    const markdown = await jinaRes.text();
-    const pageTitle = markdown.match(/^Title:\s*(.*)$/m)?.[1] || 'Unknown Title';
-    console.log(`[aiScanUrl] Jina returned content for "${pageTitle}", length:`, markdown.length);
-    
-    if (!markdown || markdown.length < 50) {
-      console.warn('[aiScanUrl] Jina returned very short content, might be blocked or empty');
-    }
-    
-    // 2. Send to Gemini
-    const finalPrompt = `You are analyzing the website: ${normalizedUrl}\n\nHere is the website content in markdown:\n\n<website_content>\n${markdown.slice(0, 40000)}\n</website_content>\n\nBased on the content above: ${prompt}`;
+    const finalPrompt = `Please visit the website "${normalizedUrl}". 
+    Based on the content of that site, answer the following request: ${prompt}`;
     
     const res = await ai.models.generateContent({
       model: 'gemini-flash-latest',
       contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+      config: {
+        tools: [{ googleSearch: {} }]
+      }
     });
     
-    console.log('[aiScanUrl] success, text length:', res.text?.length);
+    console.log('[aiScanUrl] native success, text length:', res.text?.length);
     return res.text?.trim() || '';
   } catch (err) {
-    console.error('[aiScanUrl] error:', err);
-    throw err;
+    console.error('[aiScanUrl] native error:', err);
+    // Fallback to simpler generation if tool fails
+    return aiGen(`Based on the website ${normalizedUrl}, ${prompt}`);
   }
 }
 // ── Image analysis (logo, brand assets) ───────────────────────────────────────
