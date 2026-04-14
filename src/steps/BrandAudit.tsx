@@ -54,7 +54,10 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
     setPolishing(true);
     try {
       const r = await aiGen(
-        `Rephrase into polished brand language (2-3 sentences): "${nameMeaning}". Return ONLY the rephrased text.`
+        `You are a world-class brand strategist. Take this raw founder story/meaning for "${brief.companyName}": "${nameMeaning}". 
+        Transform it into a compelling, professional brand narrative (2-3 sentences) that captures the "why" and the vision. 
+        Avoid generic corporate speak. Make it sound intentional and inspiring. 
+        Return ONLY the polished narrative.`
       );
       setPolished(r.trim());
     } catch {
@@ -101,7 +104,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-6">
+    <div className="w-full space-y-12">
 
       {/* ── Section header ── */}
       <div>
@@ -116,8 +119,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
       </div>
 
       {/* ── Company name meaning ── */}
-      <div className="bg-white rounded-2xl p-6 space-y-4"
-        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="space-y-4 pt-8" style={{ borderTop: '1px solid rgba(1,12,131,0.07)' }}>
         <p style={{ ...labelStyle }}>
           What's the story behind "{brief.companyName}"?
         </p>
@@ -143,8 +145,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
           Help me articulate this
         </button>
         {polished && (
-          <div className="rounded-xl p-4 space-y-3"
-            style={{ background: 'rgba(236,0,140,0.04)', border: '1px solid rgba(236,0,140,0.12)' }}>
+          <div className="py-4 space-y-3" style={{ borderTop: '1px solid rgba(236,0,140,0.12)' }}>
             <p style={{ ...labelStyle, color: '#EC008C' }}>Polished version</p>
             <p className="text-sm leading-relaxed" style={{ color: '#374151', fontFamily: 'var(--font-sans)' }}>
               {polished}
@@ -168,8 +169,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
       </div>
 
       {/* ── Logo upload ── */}
-      <div className="bg-white rounded-2xl p-6 space-y-4"
-        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="space-y-4 pt-8" style={{ borderTop: '1px solid rgba(1,12,131,0.07)' }}>
         <div className="flex items-center justify-between">
           <p style={labelStyle}>Existing Logo</p>
           <span style={{ ...labelStyle, color: 'rgba(1,12,131,0.28)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
@@ -280,8 +280,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
       </div>
 
       {/* ── Visual mood ── */}
-      <div className="bg-white rounded-2xl p-6 space-y-4"
-        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="space-y-4 pt-8" style={{ borderTop: '1px solid rgba(1,12,131,0.07)' }}>
         <div>
           <p style={labelStyle}>Visual Direction</p>
           <p className="text-xs mt-1" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>
