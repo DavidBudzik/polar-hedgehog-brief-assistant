@@ -74,7 +74,10 @@ export function Card({ children, title, icon: Icon }: { children: React.ReactNod
 export const STORAGE_KEY = 'polar_gemini_api_key';
 
 export function getStoredApiKey(): string {
-  return localStorage.getItem(STORAGE_KEY) || import.meta.env.VITE_GEMINI_API_KEY || '';
+  return localStorage.getItem(STORAGE_KEY) || 
+         import.meta.env.VITE_GEMINI_API_KEY || 
+         (window as any).process?.env?.GEMINI_API_KEY || 
+         '';
 }
 
 // ── Core AI helper ─────────────────────────────────────────────────────────────
@@ -87,26 +90,62 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
   const ai = getAI();
   const config: Record<string, unknown> = json ? { responseMimeType: 'application/json' } : {};
   const res = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-flash-latest',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config,
   });
   return res.text || '';
 }
 
-// ── URL scanning via Gemini urlContext tool ───────────────────────────────────
-// Gemini fetches the URL server-side — no CORS issues in the browser.
+// ── URL scanning via Jina Reader + Gemini ───────────────────────────────────
+// We use r.jina.ai to convert the URL to clean markdown, then pass it to Gemini.
 export async function aiScanUrl(url: string, prompt: string): Promise<string> {
   const ai = getAI();
   const apiKey = getStoredApiKey();
   console.log('[aiScanUrl] key present:', !!apiKey, 'url:', url);
+  
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+  
   try {
-    const res = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: `${normalizedUrl}\n\n${prompt}` }] }],
-      config: { tools: [{ urlContext: {} }] },
+    // 1. Fetch markdown from Jina (using local proxy in dev to bypass CORS)
+    const isDev = import.meta.env.DEV;
+    const jinaBase = isDev ? '/jina-proxy' : 'https://r.jina.ai';
+    
+    // In dev, the rewrite logic in vite.config.ts will handle stripping /jina-proxy
+    // We want the final URL to be https://r.jina.ai/https://example.com
+    const jinaUrl = isDev 
+      ? `${jinaBase}/${normalizedUrl}` 
+      : `${jinaBase}/${normalizedUrl}`;
+    
+    console.log('[aiScanUrl] fetching from Jina:', jinaUrl);
+    const jinaRes = await fetch(jinaUrl, {
+      headers: {
+        'Accept': 'text/plain',
+        'X-No-Cache': 'true'
+      }
     });
+    
+    if (!jinaRes.ok) {
+      const errorText = await jinaRes.text().catch(() => 'no error body');
+      console.error('[aiScanUrl] Jina failed:', jinaRes.status, jinaRes.statusText, errorText);
+      throw new Error(`Jina failed to fetch site: ${jinaRes.statusText} (${jinaRes.status})`);
+    }
+    const markdown = await jinaRes.text();
+    const pageTitle = markdown.match(/^Title:\s*(.*)$/m)?.[1] || 'Unknown Title';
+    console.log(`[aiScanUrl] Jina returned content for "${pageTitle}", length:`, markdown.length);
+    
+    if (!markdown || markdown.length < 50) {
+      console.warn('[aiScanUrl] Jina returned very short content, might be blocked or empty');
+    }
+    
+    // 2. Send to Gemini
+    const finalPrompt = `You are analyzing the website: ${normalizedUrl}\n\nHere is the website content in markdown:\n\n<website_content>\n${markdown.slice(0, 40000)}\n</website_content>\n\nBased on the content above: ${prompt}`;
+    
+    const res = await ai.models.generateContent({
+      model: 'gemini-flash-latest',
+      contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+    });
+    
     console.log('[aiScanUrl] success, text length:', res.text?.length);
     return res.text?.trim() || '';
   } catch (err) {
@@ -133,7 +172,7 @@ export async function aiAnalyzeImage(file: File, prompt: string): Promise<string
   const ai = getAI();
   const base64 = await fileToBase64(file);
   const res = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-flash-latest',
     contents: [{
       role: 'user',
       parts: [
@@ -152,6 +191,8 @@ export async function aiAnalyzeDocument(file: File, prompt: string): Promise<str
   const ai = getAI();
 
   // Upload to Files API
+  // NOTE: Direct browser upload to Files API often fails due to CORS. 
+  // If this fails, consider a server-side proxy or using smaller files via inlineData if possible.
   const uploadedFile = await ai.files.upload({
     file,
     config: { mimeType: file.type, displayName: file.name },
@@ -173,7 +214,7 @@ export async function aiAnalyzeDocument(file: File, prompt: string): Promise<str
   }
 
   const res = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-flash-latest',
     contents: [{
       role: 'user',
       parts: [

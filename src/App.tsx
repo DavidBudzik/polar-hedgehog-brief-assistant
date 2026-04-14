@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Sparkles, RefreshCw } from 'lucide-react';
 import { GeminiAssistant } from './GeminiAssistant';
 import { SettingsButton } from './Settings';
+import { PolarButton } from './shared';
 import { BRIEF_STORAGE_KEY, INITIAL_BRIEF, STEPS_ORDER } from './types';
 import type { BriefData, BriefStep } from './types';
 
@@ -145,7 +146,7 @@ function ProgressBar({ step }: { step: BriefStep; completed?: Set<BriefStep> }) 
   );
 }
 
-function SubmittedScreen({ brief }: { brief: BriefData }) {
+function SubmittedScreen({ brief, onRestart }: { brief: BriefData; onRestart: () => void }) {
   return (
     <div className="p-8 text-center space-y-8 max-w-sm w-full">
       <motion.div
@@ -177,6 +178,16 @@ function SubmittedScreen({ brief }: { brief: BriefData }) {
             <p className="text-sm font-bold" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{v}</p>
           </div>
         ))}
+      </div>
+      <div className="pt-4">
+        <PolarButton
+          variant="outline"
+          onClick={onRestart}
+          className="w-full"
+          style={{ borderColor: 'rgba(1,12,131,0.1)', color: '#010C83' }}
+        >
+          <RefreshCw size={14} className="mr-1.5" /> Start New Brief
+        </PolarButton>
       </div>
     </div>
   );
@@ -234,7 +245,7 @@ export default function App() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F7F8FF 0%, #EEF0FF 40%, #FDF0F8 100%)' }}>
-        <SubmittedScreen brief={brief} />
+        <SubmittedScreen brief={brief} onRestart={() => window.location.reload()} />
       </div>
     );
   }

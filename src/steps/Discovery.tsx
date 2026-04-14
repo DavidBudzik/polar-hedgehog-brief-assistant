@@ -38,12 +38,21 @@ export function ProblemSolution({
     setScanError(null);
     setMode('review');
     try {
-      const [p, s] = await Promise.all([
-        aiScanUrl(targetUrl, `Brand strategist. Based on this website, write a 1-2 sentence Problem Statement describing the core pain point. Return ONLY the statement.`),
-        aiScanUrl(targetUrl, `Brand strategist. Based on this website, write a 1-2 sentence Solution Description of how they solve the problem. Return ONLY the solution.`),
-      ]);
-      setProblem(p.trim());
-      setSolution(s.trim());
+      const result = await aiScanUrl(targetUrl, 
+        `Brand strategist. Based on this website, identify the core problem they solve and their solution.
+         Return a JSON object: {"problem": "1-2 sentence problem statement", "solution": "1-2 sentence solution description"}`
+      );
+      
+      // Attempt to parse JSON from the response
+      try {
+        const parsed = JSON.parse(result.replace(/```json|```/g, '').trim());
+        setProblem(parsed.problem || '');
+        setSolution(parsed.solution || '');
+      } catch (parseErr) {
+        // Fallback if not valid JSON
+        setProblem(result.split('\n')[0] || '');
+        setSolution(result.split('\n').slice(1).join(' ') || '');
+      }
     } catch (e) {
       setScanError(e instanceof Error ? e.message : String(e));
       if (!problem) setProblem(`${brief.companyName} solves the challenge of [describe your problem].`);
@@ -57,12 +66,19 @@ export function ProblemSolution({
     setScanError(null);
     setMode('review');
     try {
-      const [p, s] = await Promise.all([
-        aiAnalyzeFile(file, `Brand strategist for "${brief.companyName}". Write a 1-2 sentence Problem Statement. Return ONLY the statement.`),
-        aiAnalyzeFile(file, `Brand strategist for "${brief.companyName}". Write a 1-2 sentence Solution Description. Return ONLY the solution.`),
-      ]);
-      setProblem(p.trim());
-      setSolution(s.trim());
+      const result = await aiAnalyzeFile(file, 
+        `Brand strategist for "${brief.companyName}". Identify the core problem they solve and their solution from this document.
+         Return a JSON object: {"problem": "1-2 sentence problem statement", "solution": "1-2 sentence solution description"}`
+      );
+      
+      try {
+        const parsed = JSON.parse(result.replace(/```json|```/g, '').trim());
+        setProblem(parsed.problem || '');
+        setSolution(parsed.solution || '');
+      } catch (parseErr) {
+        setProblem(result.split('\n')[0] || '');
+        setSolution(result.split('\n').slice(1).join(' ') || '');
+      }
     } catch (e) {
       setScanError(e instanceof Error ? e.message : String(e));
       if (!problem) setProblem(`${brief.companyName} solves the challenge of [describe your problem].`);

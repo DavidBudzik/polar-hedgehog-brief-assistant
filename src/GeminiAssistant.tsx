@@ -19,12 +19,13 @@ export const GeminiAssistant = ({ isOpen, onClose }: { isOpen: boolean; onClose:
     setInput('');
 
     try {
-      const contents: any = { parts: [{ text: message }] };
-      if (imagePart) contents.parts.push(imagePart);
+      const parts: any[] = [{ text: message }];
+      if (imagePart) parts.push(imagePart);
+      const contents = [{ role: 'user', parts }];
 
-      const modelName = model === 'fast'    ? 'gemini-2.0-flash-lite'
-                      : model === 'general' ? 'gemini-2.0-flash'
-                      :                        'gemini-2.5-pro';
+      const modelName = model === 'fast'    ? 'gemini-flash-lite-latest'
+                      : model === 'general' ? 'gemini-flash-latest'
+                      :                        'gemini-pro-latest';
 
       const response: GenerateContentResponse = await ai.models.generateContent({
         model: modelName,
