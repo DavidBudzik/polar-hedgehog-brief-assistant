@@ -81,39 +81,60 @@ export function getStoredApiKey(): string {
 }
 
 // ── Core AI helper ─────────────────────────────────────────────────────────────
+let globalModelOverride: string | null = null;
+
 function getAI() {
   return new GoogleGenAI({ apiKey: getStoredApiKey() });
+}
+
+export function extractJson(text: string): any {
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    return JSON.parse(text);
+  } catch (e) {
+    console.warn('[extractJson] failed to parse:', text.slice(0, 100));
+    return null;
+  }
 }
 
 // Basic text generation
 export async function aiGen(prompt: string, json = false): Promise<string> {
   const ai = getAI();
   const config: Record<string, unknown> = json ? { responseMimeType: 'application/json' } : {};
-  const res = await ai.models.generateContent({
-    model: 'gemini-flash-latest',
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config,
-  });
-  return res.text || '';
+  const model = globalModelOverride || 'gemini-2.0-flash';
+  
+  try {
+    const res = await ai.models.generateContent({
+      model,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config,
+    });
+    return res.text || '';
+  } catch (err: any) {
+    if ((err.status === 429 || err.status === 404) && !globalModelOverride) {
+      console.warn(`[aiGen] fallback from ${model} due to ${err.status}`);
+      globalModelOverride = 'gemini-flash-latest';
+      return aiGen(prompt, json);
+    }
+    throw err;
+  }
 }
 
 // ── URL scanning via Gemini Native Browsing ──────────────────────────────────
-// Instead of a client-side fetch to Jina (which fails CORS in prod), 
-// we use the Gemini model's built-in Search tool to "visit" the URL.
 export async function aiScanUrl(url: string, prompt: string, json = false): Promise<string> {
   const ai = getAI();
-  const apiKey = getStoredApiKey();
-  console.log('[aiScanUrl] native browsing for:', url, 'json:', json);
-  
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+  const model = globalModelOverride || 'gemini-2.0-flash';
   const config: Record<string, unknown> = json ? { responseMimeType: 'application/json' } : {};
   
+  console.log('[aiScanUrl] scanning:', normalizedUrl, 'via', model);
+  
   try {
-    const finalPrompt = `Please visit the website "${normalizedUrl}". 
-    Based on the content of that site, answer the following request: ${prompt}`;
+    const finalPrompt = `Visit the website: ${normalizedUrl}\n\nTask: ${prompt}`;
     
     const res = await ai.models.generateContent({
-      model: 'gemini-flash-latest',
+      model,
       contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
       config: {
         ...config,
@@ -121,11 +142,14 @@ export async function aiScanUrl(url: string, prompt: string, json = false): Prom
       }
     });
     
-    console.log('[aiScanUrl] native success, text length:', res.text?.length);
     return res.text?.trim() || '';
-  } catch (err) {
-    console.error('[aiScanUrl] native error:', err);
-    // Fallback to simpler generation if tool fails
+  } catch (err: any) {
+    if ((err.status === 429 || err.status === 404) && !globalModelOverride) {
+      globalModelOverride = 'gemini-flash-latest';
+      return aiScanUrl(url, prompt, json);
+    }
+    console.error('[aiScanUrl] failed:', err);
+    // Final fallback: no tools, just prompt
     return aiGen(`Based on the website ${normalizedUrl}, ${prompt}`, json);
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Target, Search, Upload, RefreshCw, Loader2, ArrowRight, Plus, Trash2, Flame, Zap, Sparkles, FileText } from 'lucide-react';
-import { PolarButton, Card, aiGen, aiScanUrl, aiAnalyzeFile } from '../shared';
+import { PolarButton, Card, aiGen, aiScanUrl, aiAnalyzeFile, extractJson } from '../shared';
 import { ScreenshotCard } from '../components/ScreenshotCard';
 import { ErrorBanner } from '../ui/useAIError';
 import type { BriefData } from '../types';
@@ -44,15 +44,11 @@ export function ProblemSolution({
         true
       );
       
-      // Attempt to parse JSON from the response
-      try {
-        const jsonMatch = result.match(/\{[\s\S]*\}/);
-        const cleanResult = jsonMatch ? jsonMatch[0] : result;
-        const parsed = JSON.parse(cleanResult);
+      const parsed = extractJson(result);
+      if (parsed) {
         setProblem(parsed.problem || '');
         setSolution(parsed.solution || '');
-      } catch (parseErr) {
-        // Fallback if not valid JSON
+      } else {
         setProblem(result.split('\n')[0] || '');
         setSolution(result.split('\n').slice(1).join(' ') || '');
       }
@@ -74,11 +70,11 @@ export function ProblemSolution({
          Return a JSON object: {"problem": "1-2 sentence problem statement", "solution": "1-2 sentence solution description"}`
       );
       
-      try {
-        const parsed = JSON.parse(result.replace(/```json|```/g, '').trim());
+      const parsed = extractJson(result);
+      if (parsed) {
         setProblem(parsed.problem || '');
         setSolution(parsed.solution || '');
-      } catch (parseErr) {
+      } else {
         setProblem(result.split('\n')[0] || '');
         setSolution(result.split('\n').slice(1).join(' ') || '');
       }
@@ -99,8 +95,9 @@ export function ProblemSolution({
     setLoading(true);
     try {
       const raw = await aiGen(`Rewrite "${draft}" 3 ways, 1-2 sentences each. JSON array of 3 strings.`, true);
-      if (which === 'problem') setProblemAlts(JSON.parse(raw));
-      else setSolutionAlts(JSON.parse(raw));
+      const parsed = extractJson(raw);
+      if (which === 'problem') setProblemAlts(parsed || []);
+      else setSolutionAlts(parsed || []);
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 
@@ -263,7 +260,7 @@ export function MarketPosition({
     let tagline = '';
     try {
       const r = await aiGen(`For brand "${name}", return JSON: {"tagline":"one-line tagline max 8 words"}`, true);
-      tagline = JSON.parse(r).tagline || '';
+      tagline = extractJson(r)?.tagline || '';
     } catch {}
     const newComp = { name, url: url.trim(), tagline, tags: [cat === 'similar' ? 'Same ICP' : 'Better UX'], tagCategory: cat };
     setComps(p => { const next = [...p, newComp]; setActive(next.length - 1); return next; });
@@ -278,7 +275,7 @@ export function MarketPosition({
       const raw = await aiGen(
         `Brand: "${brief.companyName}". Problem: "${brief.problemStatement}". Competitors: ${compList}. Generate 4 bold UVP sentences. JSON array of 4 strings.`, true
       );
-      uvp = JSON.parse(raw);
+      uvp = extractJson(raw) || [];
     } catch {
       uvp = [`${brief.companyName} is the only platform built specifically for this challenge.`];
     } finally { setUvpLoading(false); }
@@ -358,7 +355,7 @@ export function Product({ brief, onDone }: { brief: BriefData; onDone: (f: Brief
     setLoading(true);
     try {
       const raw = await aiGen(`For "${brief.companyName}" solving "${brief.problemStatement}", suggest 3 key product features. JSON array of {title, desc}.`, true);
-      setFeatures(JSON.parse(raw));
+      setFeatures(extractJson(raw) || []);
     } catch {} finally { setLoading(false); }
   };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Check, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { PolarButton, aiGen } from '../shared';
+import { PolarButton, aiGen, extractJson } from '../shared';
 import { MoodBoard } from '../components/MoodBoard';
 import { ErrorBanner } from '../ui/useAIError';
 import type { BriefData } from '../types';
@@ -47,7 +47,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
       `For company "${brief.companyName}" solving "${brief.problemStatement}", recommend 5 brand keywords from: ${BASE_KEYWORDS.join(', ')}. Return a JSON array of 5 strings.`,
       true
     )
-      .then(r => setAiRecs(JSON.parse(r)))
+      .then(r => setAiRecs(extractJson(r) || []))
       .catch(e => setAiError(`Couldn't load keyword recommendations: ${e instanceof Error ? e.message : String(e)}`))
       .finally(() => setLoadingRecs(false));
   }, []);
@@ -74,7 +74,8 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
         `For brand "${brief.companyName}", write one punchy brand manifesto message per keyword: ${sel.join(', ')}. Bold and specific. Return a JSON array of objects: {keyword, message}.`,
         true
       );
-      setMessages(JSON.parse(raw).map((d: { keyword: string; message: string }) => ({
+      const parsed = extractJson(raw) || [];
+      setMessages(parsed.map((d: { keyword: string; message: string }) => ({
         ...d, approved: false, alts: [], rating: '' as const,
       })));
     } catch (e) {
@@ -92,7 +93,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
         `Write 2 alternative brand messages for keyword "${messages[i].keyword}". Different from: "${messages[i].message}". JSON array of 2 strings.`,
         true
       );
-      setMessages(p => p.map((m, idx) => idx === i ? { ...m, alts: JSON.parse(raw) } : m));
+      setMessages(p => p.map((m, idx) => idx === i ? { ...m, alts: extractJson(raw) || [] } : m));
     } catch (e) {
       setAiError(`Couldn't generate alternatives: ${e instanceof Error ? e.message : String(e)}`);
     }

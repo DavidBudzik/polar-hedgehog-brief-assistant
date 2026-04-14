@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { ArrowRight, Sparkles, Upload, Check, CheckCircle2, Loader2 } from 'lucide-react';
-import { PolarButton, aiGen, aiAnalyzeFile } from '../shared';
+import { PolarButton, aiGen, aiAnalyzeFile, extractJson } from '../shared';
 import { MoodBoard } from '../components/MoodBoard';
 import type { BriefData } from '../types';
 
@@ -72,7 +72,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
         file,
         `You are a brand designer analysing a logo for "${brief.companyName}". List exactly 4 specific visual attributes of this logo (e.g. "rounded wordmark", "deep blue palette", "minimal icon", "geometric letterform"). Return a JSON array of 4 short strings.`
       );
-      setAttrs(JSON.parse(raw));
+      setAttrs(extractJson(raw) || []);
     } catch {
       setAttrs(['Wordmark style', 'Brand colors', 'Geometric elements', 'Clean typography']);
     } finally {

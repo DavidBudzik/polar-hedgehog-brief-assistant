@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Globe, ArrowRight, Plus, Check, CheckCircle2, FileText, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { PolarButton, aiGen } from '../shared';
+import { PolarButton, aiGen, extractJson } from '../shared';
 import { ScreenshotCard } from '../components/ScreenshotCard';
 import { LogoStyleGrid } from '../components/LogoStyleGrid';
 import { ColorStripPicker } from '../components/ColorStripPicker';
@@ -43,13 +43,16 @@ export function VisualReferences({ brief, onDone }: { brief: BriefData; onDone: 
   const addBrand = async () => {
     if (!newName.trim()) return;
     const nb: RefBrand = { name: newName.trim(), url: newUrl.trim(), likes: [], dislikes: [] };
-    setBrands(p => { const next = [...p, nb]; setActive(next.length - 1); return next; });
+    const currentBrands = [...brands, nb];
+    setBrands(currentBrands);
+    setActive(currentBrands.length - 1);
     setNewName(''); setNewUrl('');
+    
     if (newUrl.trim()) {
       setAddingBrand(true);
       try {
         const raw = await aiGen(`For brand "${newName.trim()}" (${newUrl.trim()}), suggest 3 visual elements typically praised. JSON array of short strings (max 4 words each).`, true);
-        const suggestions: string[] = JSON.parse(raw);
+        const suggestions = extractJson(raw) || [];
         setBrands(p => p.map((b, i) => i === p.length - 1 ? { ...b, likes: suggestions } : b));
       } catch { /* ignore */ } finally { setAddingBrand(false); }
     }
