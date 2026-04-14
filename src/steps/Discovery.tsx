@@ -227,7 +227,7 @@ export function ProblemSolution({
             </div>
 
             <PolarButton className="w-full" disabled={!problem || !solution}
-              onClick={() => onDone({ problemStatement: problem, solutionDescription: solution, websiteUrl: url, scanSource: url || uploadedFile?.name || `${brief.companyName} document` })}>
+              onClick={() => onDone({ problemStatement: problem, solutionDescription: solution, websiteUrl: brief.websiteUrl, scanSource: brief.scanSource })}>
               Approve & Continue <ArrowRight size={16} />
             </PolarButton>
           </>
@@ -350,13 +350,22 @@ export function MarketPosition({
 export function Product({ brief, onDone }: { brief: BriefData; onDone: (f: BriefData['features']) => void }) {
   const [features, setFeatures] = useState<BriefData['features']>([{ title: '', desc: '' }, { title: '', desc: '' }]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const suggest = async () => {
     setLoading(true);
+    setError(null);
     try {
       const raw = await aiGen(`For "${brief.companyName}" solving "${brief.problemStatement}", suggest 3 key product features. JSON array of {title, desc}.`, true);
-      setFeatures(extractJson(raw) || []);
-    } catch {} finally { setLoading(false); }
+      const parsed = extractJson(raw);
+      if (parsed && Array.isArray(parsed)) {
+        setFeatures(parsed);
+      } else {
+        setError("AI returned invalid format. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setLoading(false); }
   };
 
   const up = (i: number, f: 'title' | 'desc', v: string) => setFeatures(p => p.map((x, idx) => idx === i ? { ...x, [f]: v } : x));
@@ -364,6 +373,13 @@ export function Product({ brief, onDone }: { brief: BriefData; onDone: (f: Brief
   return (
     <Card title="Main Product Features" icon={Zap}>
       <div className="space-y-3">
+        {error && (
+          <ErrorBanner 
+            message={error} 
+            onRetry={suggest}
+            onDismiss={() => setError(null)}
+          />
+        )}
         <button onClick={suggest} disabled={loading}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-40"
           style={{ border: '2px dashed rgba(236,0,140,0.3)', color: '#EC008C', fontFamily: 'var(--font-sans)' }}>
