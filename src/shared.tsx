@@ -100,12 +100,13 @@ export async function aiGen(prompt: string, json = false): Promise<string> {
 // ── URL scanning via Gemini Native Browsing ──────────────────────────────────
 // Instead of a client-side fetch to Jina (which fails CORS in prod), 
 // we use the Gemini model's built-in Search tool to "visit" the URL.
-export async function aiScanUrl(url: string, prompt: string): Promise<string> {
+export async function aiScanUrl(url: string, prompt: string, json = false): Promise<string> {
   const ai = getAI();
   const apiKey = getStoredApiKey();
-  console.log('[aiScanUrl] native browsing for:', url);
+  console.log('[aiScanUrl] native browsing for:', url, 'json:', json);
   
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+  const config: Record<string, unknown> = json ? { responseMimeType: 'application/json' } : {};
   
   try {
     const finalPrompt = `Please visit the website "${normalizedUrl}". 
@@ -115,6 +116,7 @@ export async function aiScanUrl(url: string, prompt: string): Promise<string> {
       model: 'gemini-flash-latest',
       contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
       config: {
+        ...config,
         tools: [{ googleSearch: {} }]
       }
     });
@@ -124,7 +126,7 @@ export async function aiScanUrl(url: string, prompt: string): Promise<string> {
   } catch (err) {
     console.error('[aiScanUrl] native error:', err);
     // Fallback to simpler generation if tool fails
-    return aiGen(`Based on the website ${normalizedUrl}, ${prompt}`);
+    return aiGen(`Based on the website ${normalizedUrl}, ${prompt}`, json);
   }
 }
 // ── Image analysis (logo, brand assets) ───────────────────────────────────────

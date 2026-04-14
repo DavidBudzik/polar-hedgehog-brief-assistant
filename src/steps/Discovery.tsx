@@ -40,12 +40,15 @@ export function ProblemSolution({
     try {
       const result = await aiScanUrl(targetUrl, 
         `Brand strategist. Based on this website, identify the core problem they solve and their solution.
-         Return a JSON object: {"problem": "1-2 sentence problem statement", "solution": "1-2 sentence solution description"}`
+         Return a JSON object: {"problem": "1-2 sentence problem statement", "solution": "1-2 sentence solution description"}`,
+        true
       );
       
       // Attempt to parse JSON from the response
       try {
-        const parsed = JSON.parse(result.replace(/```json|```/g, '').trim());
+        const jsonMatch = result.match(/\{[\s\S]*\}/);
+        const cleanResult = jsonMatch ? jsonMatch[0] : result;
+        const parsed = JSON.parse(cleanResult);
         setProblem(parsed.problem || '');
         setSolution(parsed.solution || '');
       } catch (parseErr) {
