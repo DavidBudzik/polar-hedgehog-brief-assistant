@@ -13,7 +13,7 @@ export const btn = (variant: 'primary' | 'secondary' | 'ghost' = 'primary', extr
 export function PolarButton({ children, onClick, variant = 'primary', className = '', disabled = false, style }: {
   children: React.ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'outline' | 'ghost'; className?: string; disabled?: boolean; style?: React.CSSProperties;
 }) {
-  const base = 'px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 text-sm select-none';
+  const base = 'px-6 py-2.5 rounded-full font-semibold transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 text-sm select-none';
 
   const inlineStyles: React.CSSProperties = {
     fontFamily: 'var(--font-sans)',
@@ -50,21 +50,20 @@ export function PolarButton({ children, onClick, variant = 'primary', className 
   );
 }
 
-export function Card({ children, title, icon: Icon }: { children: React.ReactNode; title: string; icon: React.ComponentType<{ size?: number }> }) {
+export function Card({ children, title, icon: _Icon }: { children: React.ReactNode; title: string; icon: React.ComponentType<{ size?: number }> }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="bg-white w-full rounded-2xl p-6"
-      style={{ border: '1px solid rgba(1,12,131,0.07)', boxShadow: '0 2px 20px rgba(1,12,131,0.06)' }}
+      transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="w-full bg-white rounded-2xl p-8"
+      style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}
     >
-      <div className="flex items-center gap-3 mb-5">
-        <div className="p-2 rounded-xl" style={{ background: 'rgba(236,0,140,0.08)', color: '#EC008C' }}>
-          <Icon size={17} />
-        </div>
-        <h3 className="font-bold text-sm tracking-tight" style={{ color: '#010C83', fontFamily: 'var(--font-display)' }}>{title}</h3>
-      </div>
+      {title && (
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] mb-6" style={{ color: '#EC008C', fontFamily: 'var(--font-sans)' }}>
+          {title}
+        </p>
+      )}
       {children}
     </motion.div>
   );
@@ -88,14 +87,16 @@ function getAI() {
 }
 
 export function extractJson(text: string): any {
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]);
-    return JSON.parse(text);
-  } catch (e) {
-    console.warn('[extractJson] failed to parse:', text.slice(0, 100));
-    return null;
-  }
+  // 1. Try raw text first (handles clean JSON mode responses — objects and arrays)
+  try { return JSON.parse(text.trim()); } catch {}
+  // 2. Try extracting a JSON array (e.g. AI wraps in markdown fence or prose)
+  const arrMatch = text.match(/\[[\s\S]*\]/);
+  if (arrMatch) { try { return JSON.parse(arrMatch[0]); } catch {} }
+  // 3. Try extracting a JSON object
+  const objMatch = text.match(/\{[\s\S]*\}/);
+  if (objMatch) { try { return JSON.parse(objMatch[0]); } catch {} }
+  console.warn('[extractJson] failed to parse:', text.slice(0, 100));
+  return null;
 }
 
 // Basic text generation
