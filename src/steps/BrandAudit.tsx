@@ -119,7 +119,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
       </div>
 
       {/* ── Company name meaning ── */}
-      <div className="space-y-4 pt-8" style={{ borderTop: '1px solid rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-7 space-y-4" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <p style={{ ...labelStyle }}>
           What's the story behind "{brief.companyName}"?
         </p>
@@ -169,7 +169,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
       </div>
 
       {/* ── Logo upload ── */}
-      <div className="space-y-4 pt-8" style={{ borderTop: '1px solid rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-7 space-y-4" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <div className="flex items-center justify-between">
           <p style={labelStyle}>Existing Logo</p>
           <span style={{ ...labelStyle, color: 'rgba(1,12,131,0.28)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
@@ -280,7 +280,7 @@ export function BrandAudit({ brief, onDone }: { brief: BriefData; onDone: (d: Do
       </div>
 
       {/* ── Visual mood ── */}
-      <div className="space-y-4 pt-8" style={{ borderTop: '1px solid rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-7 space-y-4" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <div>
           <p style={labelStyle}>Visual Direction</p>
           <p className="text-xs mt-1" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>

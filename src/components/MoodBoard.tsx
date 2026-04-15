@@ -1,28 +1,31 @@
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check, Landmark, Flame, Gem, Palette, Leaf, Shield, Minus, Wand2, Zap, Sun, Image } from 'lucide-react';
+import type { LucideProps } from 'lucide-react';
 
 export interface MoodState {
   liked: string[];
   skipped: string[];
 }
 
+type IconComponent = React.ComponentType<LucideProps>;
+
 interface ImageTile {
   label: string;
   url: string | null;
-  emoji: string;
+  icon: IconComponent;
 }
 
-const UNSPLASH_QUERIES: Record<string, { emoji: string; query: string }> = {
-  timeless:    { emoji: '🏛', query: 'classic architecture brand' },
-  bold:        { emoji: '🔥', query: 'bold graphic design' },
-  premium:     { emoji: '💎', query: 'luxury product minimal' },
-  playful:     { emoji: '🎨', query: 'colorful playful illustration' },
-  organic:     { emoji: '🌿', query: 'natural texture organic' },
-  trustworthy: { emoji: '🛡', query: 'professional clean corporate' },
-  minimal:     { emoji: '◻️', query: 'minimal white space design' },
-  expressive:  { emoji: '🎭', query: 'expressive art colorful' },
-  innovative:  { emoji: '⚡', query: 'technology futuristic design' },
-  warm:        { emoji: '☀️', query: 'warm cozy lifestyle brand' },
+const UNSPLASH_QUERIES: Record<string, { icon: IconComponent; query: string }> = {
+  timeless:    { icon: Landmark, query: 'classic architecture brand' },
+  bold:        { icon: Flame,    query: 'bold graphic design' },
+  premium:     { icon: Gem,      query: 'luxury product minimal' },
+  playful:     { icon: Palette,  query: 'colorful playful illustration' },
+  organic:     { icon: Leaf,     query: 'natural texture organic' },
+  trustworthy: { icon: Shield,   query: 'professional clean corporate' },
+  minimal:     { icon: Minus,    query: 'minimal white space design' },
+  expressive:  { icon: Wand2,    query: 'expressive art colorful' },
+  innovative:  { icon: Zap,      query: 'technology futuristic design' },
+  warm:        { icon: Sun,      query: 'warm cozy lifestyle brand' },
 };
 
 const DEFAULT_CATEGORIES = Object.keys(UNSPLASH_QUERIES);
@@ -55,13 +58,13 @@ export function MoodBoard({
       setLoading(true);
       const results: ImageTile[] = await Promise.all(
         categories.map(async (cat) => {
-          const meta = UNSPLASH_QUERIES[cat] ?? { emoji: '🖼', query: cat };
-          if (!key) return { label: cat, url: null, emoji: meta.emoji };
+          const meta = UNSPLASH_QUERIES[cat] ?? { icon: Image, query: cat };
+          if (!key) return { label: cat, url: null, icon: meta.icon };
           try {
             const url = await fetchUnsplashImage(meta.query, key);
-            return { label: cat, url: url || null, emoji: meta.emoji };
+            return { label: cat, url: url || null, icon: meta.icon };
           } catch {
-            return { label: cat, url: null, emoji: meta.emoji };
+            return { label: cat, url: null, icon: meta.icon };
           }
         })
       );
@@ -119,8 +122,8 @@ export function MoodBoard({
               {tile.url ? (
                 <img src={tile.url} alt={tile.label} className="absolute inset-0 w-full h-full object-cover" />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-2xl">
-                  {tile.emoji}
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center">
+                  <tile.icon size={24} className="text-gray-400" />
                 </div>
               )}
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-1 py-1.5">
@@ -130,7 +133,7 @@ export function MoodBoard({
               </div>
               {state === 'liked' && (
                 <div className="absolute top-1 right-1 w-4 h-4 bg-green-400 rounded-full flex items-center justify-center z-10">
-                  <span className="text-white text-[9px] font-black">✓</span>
+                  <Check size={10} className="text-white" strokeWidth={3} />
                 </div>
               )}
             </button>

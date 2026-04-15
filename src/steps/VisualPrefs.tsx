@@ -81,7 +81,7 @@ export function VisualReferences({ brief, onDone }: { brief: BriefData; onDone: 
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-6">
+    <div className="w-full space-y-12">
       <div>
         <p style={{ ...labelStyle, color: '#EC008C' }}>Visual Preferences</p>
         <h2 className="text-2xl font-black tracking-tight mt-1"
@@ -94,8 +94,7 @@ export function VisualReferences({ brief, onDone }: { brief: BriefData; onDone: 
       </div>
 
       {/* ── Reference brands ── */}
-      <div className="bg-white rounded-2xl p-6 space-y-4"
-        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-7 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <p style={labelStyle}>Reference Brands</p>
         <p className="text-xs" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>
           Add brands you admire visually. Tell us what you like and dislike.
@@ -211,8 +210,7 @@ export function VisualReferences({ brief, onDone }: { brief: BriefData; onDone: 
       </div>
 
       {/* ── Logo style ── */}
-      <div className="bg-white rounded-2xl p-6 space-y-4"
-        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-7 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <p style={labelStyle}>Logo Style Direction</p>
         <LogoStyleGrid value={logoStyle} onChange={setLogoStyle} />
 
@@ -239,8 +237,7 @@ export function VisualReferences({ brief, onDone }: { brief: BriefData; onDone: 
       </div>
 
       {/* ── Color palettes ── */}
-      <div className="bg-white rounded-2xl p-6 space-y-4"
-        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-7 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <p style={labelStyle}>Color Palette Preferences</p>
         <ColorStripPicker value={paletteRatings} onChange={setPaletteRatings} />
       </div>
@@ -301,7 +298,7 @@ export function SummaryReview({ brief, onDone }: { brief: BriefData; onDone: () 
   ];
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-6">
+    <div className="w-full space-y-10">
       <div>
         <p style={{ ...labelStyle, color: '#EC008C' }}>Summary</p>
         <h2 className="text-2xl font-black tracking-tight mt-1"
@@ -315,7 +312,7 @@ export function SummaryReview({ brief, onDone }: { brief: BriefData; onDone: () 
 
       {/* Completion badge */}
       <div className="flex items-center gap-3 rounded-2xl px-5 py-4"
-        style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)' }}>
+        style={{ background: 'rgba(16,185,129,0.06)', boxShadow: '0 4px 24px rgba(16,185,129,0.08)' }}>
         <CheckCircle2 size={18} style={{ color: '#059669' }} />
         <p className="text-sm font-bold" style={{ color: '#065f46', fontFamily: 'var(--font-sans)' }}>
           Brief complete — ready to share with Polar
@@ -324,13 +321,10 @@ export function SummaryReview({ brief, onDone }: { brief: BriefData; onDone: () 
 
       {/* Sections */}
       {sections.map(sec => (
-        <div key={sec.label} className="bg-white rounded-2xl overflow-hidden"
-          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 2px 12px rgba(1,12,131,0.05)' }}>
-          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(1,12,131,0.06)' }}>
-            <p style={{ ...labelStyle, color: '#EC008C' }}>{sec.label}</p>
-          </div>
+        <div key={sec.label} className="bg-white rounded-2xl p-7" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
+          <p className="mb-4" style={{ ...labelStyle, color: '#EC008C' }}>{sec.label}</p>
           {sec.items.map(([label, value]) => (
-            <div key={label} className="flex items-start justify-between px-5 py-3 gap-4"
+            <div key={label} className="flex items-start justify-between py-3 gap-4"
               style={{ borderBottom: '1px solid rgba(1,12,131,0.04)' }}>
               <span className="text-xs flex-shrink-0" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>
                 {label}

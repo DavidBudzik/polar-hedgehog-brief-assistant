@@ -110,7 +110,7 @@ export function CompanySetup({ onDone }: {
         {form.websiteUrl && (
           <div
             className="bg-white rounded-2xl p-5 mb-5"
-            style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 2px 16px rgba(1,12,131,0.05)' }}
+            style={{ boxShadow: '0 4px 24px rgba(25,28,33,0.06), 0 1px 8px rgba(1,12,131,0.04)' }}
           >
             {scanState === 'idle' && (
               <PolarButton variant="outline" className="w-full" onClick={scanSite}>
@@ -174,10 +174,7 @@ export function CompanySetup({ onDone }: {
         )}
 
         {/* Steps preview */}
-        <div
-          className="bg-white rounded-2xl p-5 mb-5"
-          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 2px 16px rgba(1,12,131,0.05)' }}
-        >
+        <div className="bg-white rounded-2xl p-5 mb-5" style={{ boxShadow: '0 4px 24px rgba(25,28,33,0.06), 0 1px 8px rgba(1,12,131,0.04)' }}>
           <p
             className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3"
             style={{ color: 'rgba(1,12,131,0.35)', fontFamily: 'var(--font-sans)' }}
@@ -237,7 +234,7 @@ export function CompanySetup({ onDone }: {
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl p-7 space-y-5" style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-8 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <div className="space-y-1.5">
           <label htmlFor="companyName" style={labelStyle}>Company Name</label>
           <input

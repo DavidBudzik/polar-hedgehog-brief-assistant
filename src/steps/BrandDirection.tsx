@@ -115,7 +115,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-6">
+    <div className="w-full space-y-10">
       <div>
         <p style={{ ...labelStyle, color: '#EC008C' }}>Brand Voice</p>
         <h2 className="text-2xl font-black tracking-tight mt-1"
@@ -136,8 +136,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
       )}
 
       {/* Keywords panel */}
-      <div className="bg-white rounded-2xl p-6 space-y-4"
-        style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+      <div className="bg-white rounded-2xl p-7 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
         <div className="flex items-center justify-between">
           <p style={labelStyle}>
             Keywords{' '}
@@ -213,8 +212,7 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
 
       {/* Messages panel */}
       {phase === 'messages' && (
-        <div className="bg-white rounded-2xl p-6 space-y-4"
-          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+        <div className="bg-white rounded-2xl p-7 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
           <p style={labelStyle}>Brand messages — approve the ones you like</p>
 
           {generatingMsgs ? (
@@ -224,11 +222,8 @@ export function BrandVoice({ brief, onDone }: { brief: BriefData; onDone: (d: Br
           ) : (
             <>
               {messages.map((m, i) => (
-                <div key={i} className="rounded-2xl p-4 transition-all"
-                  style={{
-                    border: m.approved ? '2px solid rgba(16,185,129,0.3)' : '2px solid rgba(1,12,131,0.06)',
-                    background: m.approved ? 'rgba(16,185,129,0.04)' : 'white',
-                  }}>
+                <div key={i} className="py-5 transition-all"
+                  style={{ borderBottom: '1px solid rgba(1,12,131,0.06)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#EC008C', fontFamily: 'var(--font-sans)' }}>
                       {m.keyword}
@@ -342,7 +337,7 @@ export function BrandValuesDirection({ brief, onDone }: { brief: BriefData; onDo
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-6">
+    <div className="w-full space-y-10">
       <div>
         <p style={{ ...labelStyle, color: '#EC008C' }}>Brand Values</p>
         <h2 className="text-2xl font-black tracking-tight mt-1"
@@ -358,8 +353,7 @@ export function BrandValuesDirection({ brief, onDone }: { brief: BriefData; onDo
 
       {/* Phase: pick values */}
       {phase === 'pick' && (
-        <div className="bg-white rounded-2xl p-6 space-y-3"
-          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+        <div className="bg-white rounded-2xl p-7 space-y-3" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
           {keywords.slice(0, 10).map(k => {
             const msg = msgs.find(m => m.keyword === k);
             const selected = selVals.includes(k);
@@ -404,8 +398,7 @@ export function BrandValuesDirection({ brief, onDone }: { brief: BriefData; onDo
 
       {/* Phase: mood for value 1 */}
       {phase === 'mood1' && (
-        <div className="bg-white rounded-2xl p-6 space-y-4"
-          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+        <div className="bg-white rounded-2xl p-7 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
           <p className="text-xs" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>
             Like images that feel right for "{selVals[0]}" · skip ones that don't
           </p>
@@ -424,8 +417,7 @@ export function BrandValuesDirection({ brief, onDone }: { brief: BriefData; onDo
 
       {/* Phase: mood for value 2 */}
       {phase === 'mood2' && (
-        <div className="bg-white rounded-2xl p-6 space-y-4"
-          style={{ border: '1px solid rgba(1,12,131,0.08)', boxShadow: '0 4px 24px rgba(1,12,131,0.07)' }}>
+        <div className="bg-white rounded-2xl p-7 space-y-5" style={{ boxShadow: '0 8px 48px rgba(25,28,33,0.07), 0 2px 12px rgba(1,12,131,0.04)' }}>
           <p className="text-xs" style={{ color: 'rgba(1,12,131,0.4)', fontFamily: 'var(--font-sans)' }}>
             Like images that feel right for "{selVals[1]}" · skip ones that don't
           </p>

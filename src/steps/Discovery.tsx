@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Target, Search, Upload, RefreshCw, Loader2, ArrowRight, Plus, Trash2, Flame, Zap, Sparkles, FileText } from 'lucide-react';
+import { Target, Search, Upload, RefreshCw, Loader2, ArrowRight, Plus, Trash2, Flame, Zap, Sparkles, FileText, Shuffle } from 'lucide-react';
 import { PolarButton, Card, aiGen, aiScanUrl, aiAnalyzeFile, extractJson } from '../shared';
 import { ScreenshotCard } from '../components/ScreenshotCard';
 import { ErrorBanner } from '../ui/useAIError';
@@ -323,7 +323,7 @@ export function MarketPosition({
                     ? { background: '#EC008C', color: 'white', border: '2px solid #EC008C' }
                     : { border: '2px solid rgba(1,12,131,0.1)', color: 'rgba(1,12,131,0.5)' }),
                 }}>
-                {c === 'similar' ? '⚡ Similar' : '🔀 Different'}
+                {c === 'similar' ? <><Zap size={12} /> Similar</> : <><Shuffle size={12} /> Different</>}
               </button>
             ))}
           </div>
@@ -386,7 +386,7 @@ export function Product({ brief, onDone }: { brief: BriefData; onDone: (f: Brief
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Suggest Features
         </button>
         {features.map((f, i) => (
-          <div key={i} className="p-4 rounded-xl border border-gray-100 group relative">
+          <div key={i} className="py-4 group relative" style={{ borderBottom: '1px solid rgba(1,12,131,0.06)' }}>
             <button onClick={() => setFeatures(p => p.filter((_, idx) => idx !== i))}
               className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
               <Trash2 size={14} />
